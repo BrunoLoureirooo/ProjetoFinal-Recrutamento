@@ -1,0 +1,48 @@
+﻿@inherits LayoutComponentBase
+
+@inject NavigationManager _navigation;
+
+<RadzenLayout>
+    
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10" >
+            <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />   
+        
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.End" Style="flex-grow: 1;">
+                <RadzenButton Click="Logout" Text="Logout"  />
+            </RadzenStack>
+
+        </RadzenStack>
+    </RadzenHeader>
+
+    <RadzenSidebar @bind-Expanded="@sidebarExpanded">
+
+        <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="Home" Icon="home" Path="/" />
+        </RadzenPanelMenu>
+
+        <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="Page1" Icon="work" Path="/page1" />
+        </RadzenPanelMenu>
+
+    </RadzenSidebar>
+
+    <RadzenBody>
+        <div class="rz-p-4">
+            @Body
+        </div>
+    </RadzenBody>
+
+    @* <RadzenFooter>
+        Footer
+    </RadzenFooter> *@
+</RadzenLayout>
+
+@code {
+     bool sidebarExpanded = true;
+
+    private void Logout()
+    {
+        _navigation.NavigateTo("/logout", true);
+    }
+}

@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	
+  <ItemGroup>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PRH.Server.Contracts\PRH.Server.Contracts.csproj" />
+    <ProjectReference Include="..\PRH.Server.Repository.Contracts\PRH.Server.Repository.Contracts.csproj" />
+    <ProjectReference Include="..\PRH.Server.Service.Contracts\PRH.Server.Service.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
