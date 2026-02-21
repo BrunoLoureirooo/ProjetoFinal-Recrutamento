@@ -1,0 +1,309 @@
+﻿@page "/entrevistas"
+@using PRH.Client.Wasm.ViewModels
+
+@inject IEntrevistaService EntrevistaService
+@inject ILookupService LookupService
+@inject EntrevistaFilterStateService FilterState
+@inject NavigationManager NavigationManager
+
+@inherits Notifications
+
+@attribute [Authorize]
+
+@if (_entrevistas is null)
+{
+    <LoadingEntity Entity="entrevistas" />
+}
+else
+{
+
+    <HeaderWithButton Title="Lista de Entrevistas"
+                      ButtonText="@(_isInListMode ? "Ver calendário" : "Ver lista")"
+                      ButtonIcon="@(_isInListMode ? "calendar_month" : "list")" 
+                      OnClick="@Switch"/>
+    <div class="container mt-4">
+        @if(_isInListMode)
+        {
+            <FilterCard>
+                <div class="col-12">
+                    <RadzenTextBox class="w-100"
+                    Placeholder="Nome do candidato..."
+                    @bind-Value="_nomeCandidatoFiltro" />
+                </div>
+                <div class="col-12 col-md-6 col-lg-2">
+                    <RadzenDropDown class="w-100"
+                    Placeholder="Filtrar por resultado..."
+                    @bind-Value="_resultadoFiltro"
+                    Data="@_resultados"
+                    TextProperty="Descricao"
+                    ValueProperty="Id" />
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <RadzenDatePicker class="w-100"
+                    @bind-Value="@_afterFiltro"
+                    DateFormat="dd/MM/yyyy"
+                    Placeholder="De..." />
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <RadzenDatePicker class="w-100"
+                    @bind-Value="@_beforeFiltro"
+                    DateFormat="dd/MM/yyyy"
+                    Placeholder="Até..." />
+                </div>
+                <div class="col-lg-2"></div>
+                <div class="col-6 col-lg-2">
+                    <RadzenButton Icon="search"
+                    Text="Filtrar"
+                    Click="@ApplyFilters"
+                    Class="w-100 btn btn-primary" />
+                </div>
+                <div class="col-6 col-lg-2">
+                    <RadzenButton Icon="mop"
+                    Text="Limpar"
+                    Click="@(() => CleanFilters(true))"
+                    Class="w-100 btn btn-primary" />
+                </div>
+            </FilterCard>
+
+            <ListAllGrid TItem="EntrevistaGetAllDto"
+            Entities="@_entrevistas"
+            MetaData="@_metaData"
+            OnGridLoadData="@OnGridLoadData"
+            PageSize="@_pageSize"
+            CurPage="@_curPage"
+            EntityName="entrevistas">
+                <RowTemplate Context="entrevista">
+                    <EntityCard>
+                        <Content>
+                            <h5 class="mb-1 text-dark">
+                                Entrevista a @entrevista.NomeCandidato
+                            </h5>
+                            <p class="mb-0 text-muted small">@entrevista.Resultado?.Descricao</p>
+                            <p class="mb-0 text-muted small">Marcada para @entrevista.DataHora.ToString("dd/MM/yyyy HH:mm")</p>
+                        </Content>
+                        <Buttons>
+                            <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                            Click="@(args => NavigateToEntrevista(entrevista.Id))"
+                            Class="btn btn-primary" />
+                        </Buttons>
+                    </EntityCard>
+                </RowTemplate>
+            </ListAllGrid>
+        }
+        else
+        {
+            <div class="month-nav">
+                <div class="month-arrow" @onclick="() => ChangeMonth(-1)">
+                    <RadzenIcon Icon="chevron_left" />
+                </div>
+
+                <h4 class="month-label">@_currentMonth.ToString("MMMM yyyy")</h4>
+
+                <div class="month-arrow" @onclick="() => ChangeMonth(1)">
+                    <RadzenIcon Icon="chevron_right" />
+                </div>
+            </div>
+
+            <div class="row calendar-weekdays text-center">
+                @foreach (var day in _dayNames)
+                {
+                    <div class="col">@day</div>
+                }
+            </div>
+
+            @foreach (var week in _weeks)
+            {
+                <div class="row calendar-week">
+                    @foreach (var day in week)
+                    {
+                        bool isCurrentMonth = day.Month == _currentMonth.Month;
+                        string cellClass = $"calendar-day col position-relative {(isCurrentMonth ? "" : "calendar-faded")}";
+
+                        <div class="@cellClass">
+                            <div class="small text-muted">@day.Day</div>
+
+                            @if (isCurrentMonth)
+                            {
+                                var entrevistasDoDia = _entrevistas
+                                .Where(e => e.DataHora.Date == day.Date)
+                                .OrderBy(e => e.DataHora.TimeOfDay)
+                                .ToList();
+
+                                foreach (var entrevista in entrevistasDoDia)
+                                {
+                                    <div class="entrevista-pill" @onclick="() => NavigateToEntrevista(entrevista.Id)">
+                                        @entrevista.DataHora.ToString("HH:mm")
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+}
+
+
+@code {
+    private bool _isInListMode;
+
+    private IEnumerable<EntrevistaGetAllDto> _entrevistas;
+    private IEnumerable<LookupDto> _resultados;
+    private MetaDataDto _metaData;
+    private int _curPage = 1, _pageSize = 10;
+
+    private DateTime? _beforeFiltro, _afterFiltro;
+    private string? _nomeCandidatoFiltro;
+    private Guid? _resultadoFiltro;
+
+    private DateTime _currentMonth;
+    private List<string> _dayNames = new() { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" };
+    private List<List<DateTime>> _weeks = new();
+
+    private async Task LoadEntrevistas()
+    {
+        // set to end of the day
+        if (_beforeFiltro is not null)
+            _beforeFiltro = _beforeFiltro.Value.Date.AddDays(1).AddSeconds(-1);
+
+        // set to start of the day (truncating hh:mm:ss)
+        if (_afterFiltro is not null)
+            _afterFiltro = _afterFiltro.Value.Date;
+
+        if (_beforeFiltro is not null && _afterFiltro is not null && _beforeFiltro.Value < _afterFiltro.Value)
+        {
+            Warning("Aviso dos filtros", "Data 'De...' tem de ser anterior à data 'Até...'");
+            return;
+        }
+
+        _entrevistas = null;
+
+        if (_isInListMode)
+        {
+            PagedListDto<EntrevistaGetAllDto> list = await EntrevistaService.GetEntrevistasPaginatedAsync(
+                _curPage,
+                _pageSize,
+                _nomeCandidatoFiltro,
+                _resultadoFiltro,
+                _afterFiltro,
+                _beforeFiltro
+            );
+
+            _entrevistas = list.Items;
+            _metaData = list.MetaData;
+        }
+
+        else
+        {
+            _entrevistas = await EntrevistaService.GetEntrevistasCalendarioAsync(
+                _afterFiltro.Value,
+                _beforeFiltro.Value
+            );
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isInListMode = FilterState.InListMode;
+        _nomeCandidatoFiltro = FilterState.NomeCandidato;
+        _resultadoFiltro = FilterState.Resultado;
+        _afterFiltro = FilterState.After;
+        _beforeFiltro = FilterState.Before;
+        _currentMonth = FilterState.CurrentMonthCalendar ?? DateTime.Today;
+
+        _resultados = await LookupService.GetResultadosAsync();
+
+        if (!_isInListMode) 
+            await BuildCalendar();
+        else
+            await LoadEntrevistas();
+    }
+
+    private void NavigateToEntrevista(Guid entrevistaId)
+    {
+        NavigationManager.NavigateTo($"/entrevista/{entrevistaId}");
+    }
+
+    private void SaveFilters()
+    {
+        FilterState.NomeCandidato = _nomeCandidatoFiltro;
+        FilterState.Resultado = _resultadoFiltro;
+        FilterState.After = _afterFiltro;
+        FilterState.Before = _beforeFiltro;
+        FilterState.InListMode = _isInListMode;
+        FilterState.CurrentMonthCalendar = _currentMonth;
+    }
+
+    private async Task ApplyFilters()
+    {
+        SaveFilters();
+        await LoadEntrevistas();
+    }
+
+    private async Task CleanFilters(bool reload)
+    {
+        _nomeCandidatoFiltro = null;
+        _resultadoFiltro = null;
+        _beforeFiltro = null;
+        _afterFiltro = null;
+        SaveFilters();
+
+        if(reload)
+            await LoadEntrevistas();
+    }
+
+    private async Task OnGridLoadData(LoadDataArgs args)
+    {
+        _curPage = ((int)args.Skip / (int)args.Top) + 1;
+        _pageSize = args.Top ?? 10;
+
+        await LoadEntrevistas();
+    }
+
+    private async Task Switch()
+    {
+        await CleanFilters(false);
+        _isInListMode = !_isInListMode;
+        FilterState.InListMode = _isInListMode;
+
+        if (!_isInListMode)
+            await BuildCalendar();
+
+        else
+        {
+            _entrevistas = null;
+            _metaData = null;
+            await LoadEntrevistas();
+        }
+        
+    }
+
+    private async Task BuildCalendar()
+    {
+        _afterFiltro = new DateTime(_currentMonth.Year, _currentMonth.Month, 1, 0, 0, 0);
+        _beforeFiltro = new DateTime(_currentMonth.Year, _currentMonth.Month, DateTime.DaysInMonth(_currentMonth.Year, _currentMonth.Month), 23, 59, 59);
+        SaveFilters();
+
+        await LoadEntrevistas();
+
+        _weeks.Clear();
+        var firstDayOfMonth = new DateTime(_currentMonth.Year, _currentMonth.Month, 1);
+        var firstDayOfWeek = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+
+        var days = Enumerable.Range(0, 42)
+            .Select(i => firstDayOfWeek.AddDays(i))
+            .ToList();
+
+        for (int i = 0; i < days.Count; i += 7)
+        {
+            _weeks.Add(days.Skip(i).Take(7).ToList());
+        }
+    }
+
+    private async Task ChangeMonth(int offset)
+    {
+        _currentMonth = _currentMonth.AddMonths(offset);
+        await BuildCalendar();
+    }
+}

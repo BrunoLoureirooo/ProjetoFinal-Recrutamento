@@ -1,0 +1,85 @@
+﻿@typeparam TItem
+
+@if (_entities.Any())
+{
+    <RadzenStack Orientation="Orientation.Vertical" Gap="20px">
+        <RadzenDataGrid Data="@_entities"
+        Count="@_count"
+        TItem="TItem"
+        LoadData="@HandleLoadData"
+        AllowPaging="true"
+        PageSize="@PageSize"
+        PageSizeOptions="@PageSizeOptions"
+        IsLoading="@_isLoading"
+        Class="w-100 shadow-sm rounded-4 no-thead">
+            <Columns>
+                <RadzenDataGridColumn TItem="TItem">
+                    <Template Context="item">
+                        @RowTemplate(item)
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenStack>
+    @if (MetaData is not null)
+    {
+        <div class="text-muted small my-3 d-flex justify-content-end">
+            @(((CurPage - 1) * PageSize) + 1) - @(CurPage * PageSize > MetaData.TotalCount ? MetaData.TotalCount : CurPage * PageSize) de @MetaData.TotalCount itens
+        </div>
+    }
+}
+else
+{
+    <EmptyListWarning Entity="@EntityName" />
+}
+
+@code {
+    [Parameter] public IEnumerable<TItem> Entities { get; set; }
+    [Parameter] public MetaDataDto MetaData { get; set; }
+    [Parameter] public RenderFragment<TItem> RowTemplate { get; set; }
+    [Parameter] public string EntityName { get; set; } = "itens";
+
+    [Parameter] public EventCallback<LoadDataArgs> OnGridLoadData { get; set; }
+
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public int CurPage { get; set; } = 1;
+    [Parameter] public int[] PageSizeOptions { get; set; } = new[] { 5, 10, 15, 20 };
+
+    private int _count { get; set; } = 0;
+    private IEnumerable<TItem> _entities { get; set; }
+    private bool _isLoading { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _entities = Entities;
+        _count = MetaData?.TotalCount ?? Entities.Count();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _entities = Entities;
+        _count = MetaData?.TotalCount ?? Entities.Count();
+    }
+
+    private async Task HandleLoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+
+        if (OnGridLoadData.HasDelegate)
+        {
+            await OnGridLoadData.InvokeAsync(args);
+            _entities = Entities;
+        }
+        else
+        {
+            var skip = args.Skip ?? 0;
+            var take = args.Top ?? PageSize;
+
+            _entities = Entities.Skip(skip).Take(take).ToList();
+        }
+
+        _count = MetaData?.TotalCount ?? Entities.Count();
+
+        _isLoading = false;
+    }
+}

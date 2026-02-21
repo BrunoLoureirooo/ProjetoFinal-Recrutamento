@@ -1,0 +1,115 @@
+﻿@page "/formularios"
+
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Shared.DataTransferObjets.Formulario
+@using Microsoft.AspNetCore.Authorization
+@using PRH.Client.Wasm.Shared.Components
+
+@inject IFormularioService FormularioService
+@inject IFormularioCampoService FormularioCampoService
+@inject ILookupService LookupService
+@inject ICampoService CampoService
+
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+
+@attribute [Authorize]
+
+@if (formularios is null || !formularios.Any())
+{
+    <LoadingEntity Entity="formularios" />
+}
+else
+{
+    <HeaderWithButton Title="Lista de Formularios" Path="/formularios/novo" />
+    <div class="container mt-4">
+    @if (formularios.Any())
+    {
+            <ListAllGrid TItem="FormularioGetAllDto"
+                             Entities="@formularios"
+                             MetaData="@metaData"
+                             OnGridLoadData="@OnGridLoadData"
+                             PageSize="@pageSize"
+                             CurPage="@curPage"
+                             EntityName="formularios">
+                <RowTemplate Context="formulario">
+                    <div class="p-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-1 text-dark">
+                                Formulário - @formulario.Nome
+                            </h5>
+
+                            <div class="d-flex gap-2">
+                                <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                                              Click="@(args => ShowFormularioPreview(formulario.Id))"
+                                              Class="btn btn-outline-primary" />
+                                <RadzenButton Icon="edit" Tooltip="Editar formulário"
+                                              Click="@(args => NavigateToFormulario(formulario.Id))"
+                                              Class="btn btn-outline-primary" />
+                            </div>
+                        </div>
+                    </div>
+                </RowTemplate>
+
+
+            </ListAllGrid>
+    }
+    else
+    {
+        <EmptyListWarning Entity="formularios" />
+    }
+    </div>
+}
+
+
+@code {
+    private IEnumerable<FormularioGetAllDto> formularios = new List<FormularioGetAllDto>();
+    private MetaDataDto metaData;
+    private int curPage = 1, pageSize = 10;
+    private FormularioGetOneDto formulario;
+
+
+    private async void ShowFormularioPreview(Guid Id)
+    {
+
+        formulario = await FormularioService.GetFormularioByIdAsync(Id);
+
+        DialogService.Open<FormularioPreviewDialog>(
+            "Preview do " + formulario.Nome,
+            new Dictionary<string, object> {
+                { "Campos", formulario.FormularioCampos }
+                },
+            new DialogOptions
+                {
+                    Width = "50%",
+                    Height = "50%",
+                    CloseDialogOnOverlayClick = true
+                });
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFormularios();
+    }
+
+    private async Task LoadFormularios()
+    {
+        PagedListDto<FormularioGetAllDto> list = await FormularioService.GetFormulariosPaginatedAsync(curPage, pageSize);
+        formularios = list.Items;
+        metaData = list.MetaData;
+    }
+
+    private void NavigateToFormulario(Guid formularioId)
+    {
+        NavigationManager.NavigateTo($"/formulario/{formularioId}");
+    }
+
+    private async Task OnGridLoadData(LoadDataArgs args)
+    {
+        curPage = ((int)args.Skip / (int)args.Top) + 1;
+        pageSize = args.Top ?? 10; 
+
+        await LoadFormularios();
+    }
+}

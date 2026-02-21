@@ -11,8 +11,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="Bogus" Version="35.6.2" />
 	  <PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="8.0.*" />
 	  <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.*" />
+	  <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.0" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="8.0.14" />
 	</ItemGroup>
 
 	<ItemGroup>

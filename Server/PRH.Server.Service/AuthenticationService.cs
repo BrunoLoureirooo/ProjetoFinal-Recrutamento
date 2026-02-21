@@ -96,8 +96,7 @@ namespace PRH.Server.Service
         //Private Functions
         private SigningCredentials GetSigningCredentials()
         {
-            var secretKey = Environment.GetEnvironmentVariable("SECRET");
-            var key = Encoding.UTF8.GetBytes(secretKey);
+            var key = Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("SECRET") ?? "NA");
             var secret = new SymmetricSecurityKey(key);
             return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
         }
@@ -109,7 +108,8 @@ namespace PRH.Server.Service
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, _user.UserName ?? "NA")
+                new Claim(ClaimTypes.Name, _user.UserName ?? "NA"),
+                new Claim(ClaimTypes.NameIdentifier, _user.Id)
             };
 
             var roles = await _userManager.GetRolesAsync(_user);

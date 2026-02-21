@@ -1,0 +1,174 @@
+﻿@namespace PRH.Client.Wasm.Shared.Components.Dialogs
+@using System.Collections.ObjectModel
+@using PRH.Shared.DataTransferObjets.Cargo
+
+@inject IVagaService VagaService
+@inject IFormularioService FormularioService
+@inject DialogService DialogService
+
+@inherits PRH.Client.Wasm.Pages.Notifications
+
+<EditForm Model="@_vaga" OnValidSubmit="@SaveAddVaga">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row g-3">
+        <div class="mb-3">
+            <RadzenTextBox class="w-100" @bind-Value="_vaga.Descricao" Placeholder="Descrição..." />
+        </div>
+        <div class="col-12 col-md-4">
+            <RadzenDropDown class="w-100"
+            Data="@Modalidades"
+            @bind-Value="_vaga.Modalidade"
+            TextProperty="Descricao"
+            Placeholder="Modalidade..." />
+        </div>
+        <div class="col-12 col-md-4">
+            <RadzenDropDown class="w-100"
+            Data="@TiposVaga"
+            @bind-Value="_vaga.TipoVaga"
+            TextProperty="Descricao"
+            Placeholder="Tipo..." />
+        </div>
+        <div class="col-12 col-md-4">
+            <RadzenDropDown Placeholder="Cargo..."
+            class="w-100"
+                            @bind-Value="_vaga.Cargo"
+            Data=@Cargos
+            TextProperty="@nameof(CargoGetAllDto.Nome)" />
+        </div>
+        <div class="col-6">
+            <label for="numVagas" class="w-100">Número de vagas</label>
+            <RadzenNumeric id="numVagas" @bind-Value="_vaga.NumVagas" Min="1" class="w-100" />
+        </div>
+        <div class="col-6 d-flex align-items-center">
+            <RadzenCheckBox id="candidaturaDisponivelVaga" class="me-2" @bind-Value="_vaga.CandidaturaDisponivel" />
+            <label for="candidaturaDisponivelVaga" class="mb-0">Candidatura Disponível</label>
+        </div>
+        <div class="col-12">
+            <label class="w-100 fw-bold">Formulários</label>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <RadzenDropDown class="w-100 w-50"
+                Placeholder="Selecione um formulário..."
+                @bind-Value=@_formularioVaga
+                Data=@Formularios
+                TextProperty="@nameof(FormularioGetAllDto.Nome)" />
+                <RadzenButton Icon="add" Class="btn btn-success" Click="@AddFormulario" />
+            </div>
+
+            @foreach (var formulario in _formulariosVaga)
+            {
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">
+                            @formulario.Nome
+                        </h5>
+                        <p class="mb-0 text-muted small">(@formulario.NomeUnico)</p>
+                        <p class="mb-0 text-muted small">@formulario.TipoFormulario?.Descricao</p>
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="visibility" Tooltip="Visualizar formulário"
+                                      Click="@(args => ShowFormularioPreview(formulario.Id))"
+                                      Class="btn btn-outline-primary" />
+                        <RadzenButton Icon="delete" Tooltip="Remover formulario"
+                        Click="@(args => RemoveFormulario(formulario))"
+                        Class="btn btn-primary" />
+                    </Buttons>
+                </EntityCard>
+            }
+        </div>
+        <div class="col-lg-3"></div>
+        <div class="col-6 col-lg-3">
+            <RadzenButton Icon="save" Class="btn btn-primary w-100" Type="submit" Text="Salvar" />
+        </div>
+        <div class="col-6 col-lg-3">
+            <RadzenButton Icon="cancel" Class="btn btn-primary w-100" Click="@CancelNewVaga" Text="Cancelar" />
+        </div>
+        <div class="col-lg-3"></div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public IEnumerable<FormularioGetAllDto> Formularios { get; set; }
+    [Parameter] public IEnumerable<CargoGetAllDto> Cargos { get; set; }
+    [Parameter] public IEnumerable<LookupDto> TiposVaga { get; set; }
+    [Parameter] public IEnumerable<LookupDto> Modalidades { get; set; }
+    [Parameter] public string RecrutamentoId { get; set; }
+    [Parameter] public bool IsDialog { get; set; } = false;
+
+    private IEnumerable<FormularioGetAllDto> _formulariosVaga = new List<FormularioGetAllDto>();
+    private FormularioGetAllDto _formularioVaga;
+    private VagaCreateDisplayDto _vaga = new()
+        {
+            CandidaturaDisponivel = false,
+            NumVagas = 1,
+            Descricao = ""
+        };
+
+    private async Task SaveAddVaga()
+    {
+
+        if (_formulariosVaga is null || !_formulariosVaga.Any())
+        {
+            Failure("Erro de criação de vaga", "Vaga precisa de pelo menos um formulário");
+            return;
+        }
+
+        VagaCreateDto realVaga = new()
+            {
+                RecrutamentoId = Guid.Parse(RecrutamentoId),
+                CandidaturaDisponivel = _vaga.CandidaturaDisponivel,
+                NumVagas = _vaga.NumVagas,
+                Descricao = _vaga.Descricao,
+                ModalidadeId = _vaga.Modalidade.Id,
+                CargoId = _vaga.Cargo.Id,
+                TipoVagaId = _vaga.TipoVaga.Id,
+                FormularioIds = new()
+            };
+
+        foreach (FormularioGetAllDto f in _formulariosVaga)
+            realVaga.FormularioIds.Add(f.Id);
+
+        await VagaService.CreateVagaAsync(realVaga);
+
+        DialogService.Close(true);
+    }
+
+    private void CancelNewVaga()
+    {
+        DialogService.Close(false);
+    }
+
+    private void AddFormulario()
+    {
+        if (_formularioVaga is null)
+        {
+            Failure("Erro de criação de vaga", "Não selecionou o formulário");
+            return;
+        }
+        _formulariosVaga = _formulariosVaga.Append(_formularioVaga).ToList();
+    }
+
+    private void RemoveFormulario(FormularioGetAllDto f)
+    {
+        if (f is not null)
+            _formulariosVaga = _formulariosVaga.Where(x => x != f);
+    }
+
+    private async void ShowFormularioPreview(Guid id)
+    {
+        FormularioGetOneDto formulario = await FormularioService.GetFormularioByIdAsync(id);
+
+        DialogService.Open<FormularioPreviewDialog>(
+            "Preview do " + formulario.Nome,
+            new Dictionary<string, object> {
+                { "Campos", formulario.FormularioCampos }
+                        },
+            new DialogOptions
+                {
+                    Width = "50%",
+                    Height = "50%",
+                    CloseDialogOnOverlayClick = true
+                });
+    }
+}

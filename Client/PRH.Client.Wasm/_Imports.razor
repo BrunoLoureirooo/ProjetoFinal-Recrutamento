@@ -5,10 +5,31 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using Microsoft.AspNetCore.Components.WebAssembly.Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.JSInterop
 
 @using PRH.Client.Wasm
+@using PRH.Client.Wasm.Auth
 @using PRH.Client.Wasm.Layout
+@using PRH.Client.Wasm.Shared.Components
+@using PRH.Client.Wasm.Shared.Components.Dialogs
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Client.Wasm.Services.FilterState
+@using PRH.Client.Wasm.ViewModels
+
+@using PRH.Shared.DataTransferObjets
+@using PRH.Shared.DataTransferObjets.Vaga
+@using PRH.Shared.DataTransferObjets.TipoDocumento
+@using PRH.Shared.DataTransferObjets.Entrevista
+@using PRH.Shared.DataTransferObjets.Recrutamento
+@using PRH.Shared.DataTransferObjets.Candidatura
+@using PRH.Shared.DataTransferObjets.CampoRespondido
+@using PRH.Shared.DataTransferObjets.Campo
+@using PRH.Shared.DataTransferObjets.Cargo
+@using PRH.Shared.DataTransferObjets.Formulario
+@using PRH.Shared.DataTransferObjets.Funcionario
+@using PRH.Shared.DataTransferObjets.RequestFeatures
 
 @using Radzen
 @using Radzen.Blazor

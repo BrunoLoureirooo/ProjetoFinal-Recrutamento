@@ -1,0 +1,260 @@
+﻿@page "/candidatura/{Id}"
+@using PRH.Client.Wasm.ViewModels
+@using PRH.Shared.DataTransferObjets.CampoRespondido
+@using PRH.Shared.DataTransferObjets.Candidatura
+
+@inject ICandidaturaService CandidaturaService
+@inject ILookupService LookupService
+@inject IFuncionarioService FuncionarioService
+@inject IEntrevistaService EntrevistaService
+@inject IDocumentoService DocumentoService
+@inject ITipoDocumentoService TipoDocumentoService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject HttpClient ApiClient
+
+@inherits Notifications
+
+@attribute [Authorize]
+
+@if (_candidatura is null)
+{
+    <LoadingEntity Entity=@($"candidatura {Id}") />
+}
+else
+{
+    <HeaderWithSubtext Title=@($"Candidatura a {_candidatura.RecrutamentoNome}")
+    Subtext=@($"{_candidatura.Id}") />
+
+    <div class="container mt-4">
+        <div class="d-flex gap-2 justify-content-end mb-2">
+            <RadzenButton Text="Ver Vaga"
+            Icon="visibility"
+            Class="btn btn-success"
+            Tooltip="Ver Vaga"
+            Click="@(() => NavigateToVaga(_candidatura.Vaga.Id))" />
+            @if (_candidatura.Estado.Descricao == "A Decorrer")
+            {
+                    <RadzenButton Icon="calendar_month" Text="Marcar Entrevista" Class="btn btn-primary" Click="@MarcarEntrevista" />
+                    @if (_candidatura.Entrevistas.Any())
+                    {
+                        <RadzenButton Icon="check_circle" Text="Admitir" Class="btn btn-primary" Click="@Admitir" />
+                    }
+                    <RadzenButton Icon="highlight_off" Text="Rejeitar" Class="btn btn-primary" Click="@Rejeitar" />
+            
+            }
+            </div>
+        <Card>
+            <div class="flex-column mb-3">
+                <div class="d-flex flex-row justify-content-between mb-3">
+                    <h2 class="me-3">Nome do candidato: @_candidatura.NomeCandidato</h2>
+                    <p class="text-end">Estado: <strong>@_candidatura.Estado.Descricao</strong></p>
+                </div>
+                <div class="col-3">
+                    <p>Para a empresa @_candidatura.Empresa.Nome</p>
+                </div>
+                <div class="col-3">
+                    <p>NIF do candidato: @_candidatura.NIFcandidato</p>
+                </div>
+                <div class="col-3">
+                    <p>Contacto do candidato: @_candidatura.ContactoCandidato</p>
+                </div>
+                <div class="col-3">
+                    <p>E-mail do candidato: @_candidatura.EmailCandidato</p>
+                </div>
+            </div>
+
+            <h3 class="fw-bold">Respostas:</h3>
+            @if (_candidatura.CamposRespondidos.Any())
+            {
+                <RadzenDataGrid Data="@_candidatura.CamposRespondidos"
+                AllowPaging="true"
+                PageSize="5"
+                PageSizeOptions="@PageSizeOptions"
+                TItem="CampoRespondidoGetOneCandidaturaDto"
+                Class="w-100 shadow-sm rounded-4">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="CampoRespondidoGetOneCandidaturaDto" Property="Nome" Title="Nome do Campo">
+                            <Template Context="campo">
+                                <div class="d-flex justify-content-between align-items-center p-2">
+                                    <div>
+                                        <h5 class="mb-1 text-dark">
+                                            @campo.Nome
+                                        </h5>
+                                    </div>
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="CampoRespondidoGetOneCandidaturaDto" Property="Resposta" Title="Resposta">
+                            <Template Context="campo">
+                                <div class="d-flex justify-content-between align-items-center p-2">
+                                    <div>
+                                        <p class="mb-1 text-dark">
+                                            @campo.Resposta
+                                        </p>
+                                    </div>
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
+            else
+            {
+                <EmptyListWarning Entity="campos respondidos" Parent="esta candidatura"/>
+            }
+
+            <h3 class="fw-bold mt-4">Documentos Submetidos:</h3>
+            <ListAllGrid TItem="DocumentoDto"
+            Entities="@_documentos"
+            EntityName="documentos">
+                <RowTemplate Context="doc">
+                    <EntityCard>
+                        <Content>
+                            <h5 class="mb-1 text-dark">
+                                @(_tipos.FirstOrDefault(t => t.Id == doc.TipoDocumentoId)?.Nome ?? "-")
+                            </h5>
+                            <p class="mb-0 text-muted small">@(doc.DocumentoAssinado ? "Documento assinado" : "Documento por assinar")</p>
+                        </Content>
+                        <Buttons>
+                            <RadzenButton Icon="visibility"
+                            Tooltip="Visualizar"
+                            Click="@(args => PreviewPdf(doc.Caminho))"
+                            Class="btn btn-primary" />
+                        </Buttons>
+                    </EntityCard>
+                </RowTemplate>
+            </ListAllGrid>
+
+            <h3 class="fw-bold mt-4">Entrevistas:</h3>
+            <ListAllGrid TItem="EntrevistaGetAllDto"
+            Entities="@_candidatura.Entrevistas"
+            EntityName="entrevistas"
+            PageSize="5">
+                <RowTemplate Context="entrevista">
+                    <EntityCard>
+                        <Content>
+                            <h5 class="mb-1 text-dark">
+                                Entrevista a @entrevista.NomeCandidato
+                            </h5>
+                            <p class="mb-0 text-muted small">@entrevista.Resultado?.Descricao</p>
+                            <p class="mb-0 text-muted small">Marcada para @entrevista.DataHora.ToString("dd/MM/yyyy HH:mm")</p>
+                        </Content>
+                        <Buttons>
+                            <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                            Click="@(args => NavigateToEntrevista(entrevista.Id))"
+                            Class="btn btn-primary" />
+                        </Buttons>
+                    </EntityCard>
+                </RowTemplate>
+            </ListAllGrid>
+
+        </Card>
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; }
+    public int[] PageSizeOptions { get; set; } = new[] { 5, 10, 15, 20 };
+
+    private CandidaturaGetOneDto _candidatura;
+    private IEnumerable<LookupDto> _estados;
+    private IEnumerable<DocumentoDto> _documentos;
+    private IEnumerable<TipoDocumentoDto> _tipos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _candidatura = await CandidaturaService.GetCandidaturaByIdAsync(Guid.Parse(Id));
+        _estados = await LookupService.GetEstadosAsync();
+        _documentos = await DocumentoService.GetDocumentosByCandidaturaIdAsync(Guid.Parse(Id));
+        _tipos = await TipoDocumentoService.GetTipoDocumentosAsync();
+    }
+
+    private void NavigateToVaga(Guid Id)
+    {
+        NavigationManager.NavigateTo($"/vaga/{Id}");
+    }
+
+    private async Task MarcarEntrevista()
+    {
+        var entrevistadores = await FuncionarioService.GetFuncionariosByEmpresaAsync(_candidatura.Empresa.Id);
+        await DialogService.OpenAsync<EntrevistaCreateDialog>(
+            "Marcar Entrevista",
+            new Dictionary<string, object> {
+                { "Entrevistadores", entrevistadores },
+                { "CandidaturaId", _candidatura.Id}
+            },
+            new DialogOptions
+            {
+                Width = "50%",
+                Height = "40%",
+                CloseDialogOnOverlayClick = true
+            }
+        );
+
+        _candidatura = await CandidaturaService.GetCandidaturaByIdAsync(Guid.Parse(Id));
+
+        StateHasChanged();
+    }
+
+    private async Task Admitir()
+    {
+        await MudarEstado("Admitido");
+    }
+
+
+    private async Task Rejeitar()
+    {
+        await MudarEstado("Rejeitado");
+    }
+
+    private async Task MudarEstado(string estado)
+    {
+        try
+        {
+            var estadoAprovado = _estados.FirstOrDefault(e => e.Descricao == estado);
+            if (estadoAprovado == null)
+            {
+                Warning("Atenção", "Estado não encontrado");
+                return;
+            }
+
+            var dto = new CandidaturaUpdateDto
+                {
+                    EstadoId = estadoAprovado.Id
+                };
+
+            await CandidaturaService.UpdateCandidaturaAsync(Guid.Parse(Id), dto);
+
+            Success("Sucesso", "Alterações gravadas com sucesso");
+
+            _candidatura = await CandidaturaService.GetCandidaturaByIdAsync(Guid.Parse(Id));
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Failure("Erro inesperado", $"Não foi possível salvar: {ex.Message}");
+        }
+    }
+
+    private void NavigateToEntrevista(Guid entrevistaId)
+    {
+        NavigationManager.NavigateTo($"/entrevista/{entrevistaId}");
+    }
+
+    private void PreviewPdf(string caminho)
+    {
+        var absoluteUrl = new Uri(ApiClient.BaseAddress, caminho).ToString();
+
+        DialogService.Open<PdfViewer>(
+            "Visualizar Documento",
+            new Dictionary<string, object> { ["url"] = absoluteUrl },
+            new DialogOptions
+                {
+                    Width = "90vw",
+                    Height = "90vh",
+                    ContentCssClass = "h-100"
+                });
+    }
+}

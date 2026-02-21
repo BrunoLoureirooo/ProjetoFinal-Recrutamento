@@ -2,8 +2,8 @@
 
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-@using PRH.Client.Wasm.Services.Contracts
-@using PRH.Client.Wasm.ViewModels
+@using PRH.Shared.Contracts
+@using PRH.Shared.ViewModels
 @using Radzen
 @using System.Text.Json
 @using System.ComponentModel.DataAnnotations;
@@ -65,7 +65,7 @@
 				{
 					Severity = NotificationSeverity.Error,
 					Summary = "Erro login",
-					Detail = "Erro login",
+					Detail = "password or email incorrect",
 					Duration = 4000
 				});
 			}
@@ -76,7 +76,7 @@
 			{
 				Severity = NotificationSeverity.Error,
 				Summary = "Erro",
-				Detail = "This is a dynamically generated Radzen notification.",
+				Detail = ex.Message.ToString(),
 				Duration = 4000
 			});
 		}

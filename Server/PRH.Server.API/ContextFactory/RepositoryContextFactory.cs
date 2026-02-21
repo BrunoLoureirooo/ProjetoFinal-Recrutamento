@@ -17,8 +17,13 @@ namespace PRH.SERVER.API.ContextFactory
             //    .UseSqlServer(configuration.GetConnectionString("sqlConnection"));
 
             var builder = new DbContextOptionsBuilder<RepositoryContext>()
-                .UseSqlServer(configuration.GetConnectionString("sqlConnection"),
-                    b => b.MigrationsAssembly("PRH.Server.API"));
+     .UseSqlServer(configuration.GetConnectionString("sqlConnection"),
+         b =>
+         {
+             b.MigrationsAssembly("PRH.Server.API");
+             b.CommandTimeout(120); // timeout de 120 segundos
+         });
+
 
 
             return new RepositoryContext(builder.Options);

@@ -1,12 +1,15 @@
-namespace PRH.Shared.DataTransferObjets;
+using System;
+using System.Collections.Generic;
 
-public class EmpresaDto
+namespace PRH.Shared.DataTransferObjets
 {
-    public EmpresaDto()
+    public class EmpresaDto
     {
+        public EmpresaDto()
+        {
+        }
+
+        public Guid Id { get; set; }
+        public string Nome { get; set; } = string.Empty;
     }
-
-    public Guid Id { get; set; }
-    public string Nome { get; set; }
-
 }

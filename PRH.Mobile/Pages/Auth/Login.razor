@@ -1,0 +1,94 @@
+﻿@page "/login"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using PRH.Shared.Contracts
+@using PRH.Mobile
+@using Radzen
+@using System.Text.Json
+@using System.ComponentModel.DataAnnotations;
+@using PRH.Shared.ViewModels;
+
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@inject Radzen.NotificationService _notificationService
+@inject IAuthService _authService;
+
+@attribute [AllowAnonymous]
+
+
+<RadzenStack Gap="0" class="rz-my-12 rz-mx-auto rz-border-radius-6 rz-shadow-10"
+	Style="width: 100%; max-width: 400px; overflow: hidden;">
+
+	<RadzenCard class="rz-shadow-0 rz-border-radius-0 rz-background-color-info rz-p-12" style="text-align: center;">
+		<RadzenText TextStyle="TextStyle.DisplayH3" TagName="TagName.H2" class="rz-color-white rz-mb-0">Login
+		</RadzenText>
+	</RadzenCard>
+
+	<RadzenCard class="rz-shadow-0 rz-p-12">
+		<ErrorBoundary>
+			<ChildContent>
+				<RadzenTemplateForm Data="@Model" TItem="LoginForm">
+					<RadzenLogin AllowRememberMe="true" AllowResetPassword="true" ShowLoginButton="true"
+						AllowRegister="false" Login="OnSubmit"
+						ResetPassword="@(_ => Navigation.NavigateTo("forgot-password"))" />
+				</RadzenTemplateForm>
+			</ChildContent>
+			<ErrorContent>
+				<pre>@context.ToString()</pre>
+			</ErrorContent>
+		</ErrorBoundary>
+
+
+	</RadzenCard>
+
+</RadzenStack>
+
+<style>
+	.center-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 100vh;
+		background-color: #f4f4f4;
+	}
+</style>
+
+@code {
+
+	private LoginForm Model { get; set; } = new LoginForm() { Email = "", Password = "" };
+
+	private async Task OnSubmit(LoginArgs model)
+	{
+		try
+		{
+			var success = await _authService.LoginAsync(model.Username, model.Password);
+
+			if (success)
+			{
+				Navigation.NavigateTo("/");
+			}
+			else
+			{
+				_notificationService.Notify(new NotificationMessage
+				{
+					Severity = NotificationSeverity.Error,
+					Summary = "Erro login",
+					Detail = "password or email incorrect",
+					Duration = 4000
+				});
+			}
+		}
+		catch (Exception ex)
+		{
+			_notificationService.Notify(new NotificationMessage
+			{
+				Severity = NotificationSeverity.Error,
+				Summary = "Erro",
+				Detail = ex.Message.ToString(),
+				Duration = 4000
+			});
+		}
+	}
+}

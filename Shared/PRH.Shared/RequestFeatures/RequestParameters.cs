@@ -9,7 +9,7 @@ namespace PRH.Shared.RequestFeatures
     public abstract class RequestParameters
     {
         const int maxPageSize = 50;
-        public int PageNumber { get; set; } = 1;
+        public int? PageNumber { get; set; }
 
         private int _pageSize = 10;
         public int PageSize

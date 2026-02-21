@@ -1,0 +1,9 @@
+<div style="height: 100vh;" class="d-flex flex-column justify-content-center align-items-center">
+    <div style="width: 45%;">
+        <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+    </div>
+    <p class="text-muted mt-1">A carregar @Entity...</p>
+</div>
+@code {
+    [Parameter] public string Entity { get; set; }
+}

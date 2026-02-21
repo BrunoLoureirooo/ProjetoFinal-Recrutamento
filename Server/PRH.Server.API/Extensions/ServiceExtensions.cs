@@ -17,14 +17,16 @@ namespace PRH.Server.API.Extensions
 {
     public static class ServiceExtensions
     {
-        public static void ConfigureCors(this IServiceCollection services) =>
+        public static void ConfigureCors(this IServiceCollection services, IConfiguration configuration) =>
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy", builder =>
                 builder
-                .AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader()                
+                .AllowAnyOrigin()   //Replace with: WithOrigins("https://example.com")
+                .WithOrigins("http://localhost:5073", "http://10.0.2.2:5000", configuration.GetValue<string>("WasmUrl"), "https://demorecrutamento.trigenius.pt")
+                .AllowAnyMethod()   //Replace with: WithMethods("POST", "GET") 
+                .AllowAnyHeader() //Replace with: WithHeaders("accept", "contenttype")     
+                .AllowCredentials()
                 .WithExposedHeaders("X-Pagination")
                 );
             });
@@ -51,7 +53,7 @@ namespace PRH.Server.API.Extensions
         //Version I
         public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration) =>
             services.AddDbContext<RepositoryContext>(opts =>
-                opts.UseSqlServer(configuration.GetConnectionString("sqlConnection")));
+                opts.UseSqlServer(configuration.GetConnectionString("sqlConnection")).EnableSensitiveDataLogging());
 
         //Version II
         //public static void ConfigureSqlContext(this IServiceCollection services,

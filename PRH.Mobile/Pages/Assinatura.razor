@@ -1,0 +1,210 @@
+﻿@page "/assinatura/{DocumentoId}"
+
+@using Microsoft.AspNetCore.Authorization
+@using PRH.Mobile.Components.Models
+@using PRH.Shared.DataTransferObjets
+@using SigPad
+@inject NavigationManager navigationManager
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@inject Radzen.DialogService DialogService
+@using System.Diagnostics
+
+@attribute [Authorize]
+<!--
+<p>@PdfUrlOnline</p>
+
+@if (!string.IsNullOrEmpty(PdfUrlOnline))
+{
+    <div class="pdf-container" style="width:100%; height:100vh;">
+
+        <object data="@PdfUrlOnline" type="application/pdf" style="width:100%; height:100%; border:none;">
+            <p style="color:#aaa;">Seu navegador não suporta visualização de PDF. <a href="@PdfUrlOnline" target="_blank">Clique aqui para baixar o PDF.</a></p>
+        </object>
+    </div>
+}
+else
+{
+    <p style="color:#aaa;">Não foi encontrado caminho de ficheiro para preview.</p>
+}
+-->
+
+<RadzenButton Text="Voltar à Leitura do Documento"
+              Icon="arrow_back"
+              ButtonStyle="ButtonStyle.Secondary"
+              Click="@VoltarAoScan"
+              Style="margin-top:1rem;" />
+
+<h2>Assinatura - @(CurrentStep == 0 ? "Empresa" : "Candidato")</h2>
+
+
+
+@if (Signatures.Count < 2)
+{
+    <div style="position: relative;">
+        <SignaturePad @bind-Value="Input.Signature"
+                      @key="PadKey"
+                      style="width: 100%; border: 1px solid #3A474D; border-radius:10px;" />
+
+        <div style="
+            position: absolute;
+            bottom: 60px;
+            left: 10px;
+            right: 10px;
+            height: 1px;
+            background-color: #999;
+            z-index: 10;">
+        </div>
+
+    </div>
+
+ 
+
+}
+
+@if (Input.Signature?.Any() == true)
+{
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Start" Gap="10px" Style="margin-top:1rem;">
+        <RadzenButton ButtonStyle="ButtonStyle.Primary"
+                      Icon="arrow_forward"
+                      Text="@(CurrentStep == 0 ? "Próxima Assinatura (Candidato)" : "Finalizar")"
+                      Click="NextStep"
+                      Style="margin-top:1rem;" />
+    </RadzenStack>
+}
+
+@if (Signatures.Count == 2)
+{
+    <h3>Assinaturas Recolhidas:</h3>
+    <p><strong>Empresa:</strong></p>
+    <img src="@Signatures[0]" style="max-width:100%; border:1px solid #ccc; border-radius:10px;" />
+    <p><strong>Candidato:</strong></p>
+    <img src="@Signatures[1]" style="max-width:100%; border:1px solid #ccc; border-radius:10px;" />
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="10px" Style="margin-top:1rem;">
+        <RadzenButton Text="Cancelar"
+                      Icon="close"
+                      ButtonStyle="ButtonStyle.Secondary"
+                      Click="@OnCancel" />
+        <RadzenButton ButtonStyle="ButtonStyle.Primary"
+                      Icon="check"
+                      Text="Confirmar Envio"
+                      Click="@ConfirmarEnvio" />
+    </RadzenStack>
+}
+
+@code {
+    public MyInput Input { get; set; } = new();
+    public List<string> Signatures { get; set; } = new();
+    private int CurrentStep = 0;
+    private string PadKey = Guid.NewGuid().ToString();
+    private string pdfBase64;
+    private string PdfUrlOnline;
+
+    [Parameter] public string DocumentoId { get; set; } = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            if (Guid.TryParse(DocumentoId, out var guid))
+            {
+                var httpResponse = await Http.GetAsync($"/api/admissoes/documentos/{guid}/bytes");
+                if (httpResponse.IsSuccessStatusCode)
+                {
+                    var bytes = await httpResponse.Content.ReadAsByteArrayAsync();
+                    if (bytes != null && bytes.Length > 0)
+                    {
+                        pdfBase64 = Convert.ToBase64String(bytes);
+                        PdfUrlOnline = $"data:application/pdf;base64,{pdfBase64}";
+                    }
+                    else
+                    {
+                        await DialogService.OpenAsync("Aviso", ds =>
+                            (builder) => builder.AddContent(0, "O PDF retornado está vazio."));
+                    }
+                }
+                else
+                {
+                    var error = await httpResponse.Content.ReadAsStringAsync();
+                    await DialogService.OpenAsync("Erro", ds =>
+                        (builder) => builder.AddContent(0, $"Falha ao carregar: {httpResponse.StatusCode} - {error}"));
+                }
+           }
+            else
+            {
+                var error = "Id documento inválido";
+                await DialogService.OpenAsync("Erro", ds =>
+                    (builder) => builder.AddContent(0, $"Falha ao carregar - {error}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            await DialogService.OpenAsync("Exceção", ds =>
+                (builder) => builder.AddContent(0, $"Erro de rede: {ex.Message}"));
+        }
+    }
+
+    private async Task NextStep()
+    {
+        if (string.IsNullOrEmpty(Input.SignatureAsBase64))
+            return;
+
+        Signatures.Add(Input.SignatureAsBase64);
+
+        Input = new MyInput();
+        PadKey = Guid.NewGuid().ToString();
+
+        if (CurrentStep == 0)
+            CurrentStep = 1;
+
+        StateHasChanged();
+    }
+
+    private async Task ConfirmarEnvio()
+    {
+
+        var dto = new AssinaturaDto
+            {
+                documentoId = Guid.Parse(DocumentoId),
+                Assinaturas = Signatures
+            };
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/admissoes/documentos/assinatura", dto);
+            if (response.IsSuccessStatusCode)
+            {
+                navigationManager.NavigateTo("/");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await DialogService.OpenAsync("Erro", ds =>
+                    (builder) => builder.AddContent(0, $"Falha ao assinar: {response.StatusCode} - {error}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            await DialogService.OpenAsync("Exceção", ds =>
+                (builder) => builder.AddContent(0, $"Erro de rede: {ex.Message}"));
+        }
+    }
+
+    private void OnCancel()
+    {
+        Signatures.Clear();
+        Input = new MyInput();
+        CurrentStep = 0;
+        PadKey = Guid.NewGuid().ToString();
+
+        PdfUrlOnline = null;
+        StateHasChanged();
+    }
+
+    private void VoltarAoScan()
+    {
+        navigationManager.NavigateTo("/");
+    }
+
+}

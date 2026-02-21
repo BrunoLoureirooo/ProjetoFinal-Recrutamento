@@ -1,0 +1,19 @@
+﻿@page "/logout"
+
+@using Microsoft.AspNetCore.Authorization
+@using PRH.Shared.Contracts
+
+@inject IAuthService _authService
+@inject NavigationManager _navigation
+
+<h3>Logging out...</h3>
+
+@attribute [Authorize]
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await _authService.LogoutAsync();
+        _navigation.NavigateTo("/login");
+    }
+}

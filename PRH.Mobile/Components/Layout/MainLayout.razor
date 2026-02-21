@@ -1,0 +1,39 @@
+﻿@inherits LayoutComponentBase
+
+@inject NavigationManager _navigation;
+
+
+<RadzenLayout>
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Style="width: 100%; justify-content: center; padding-left: 20px; margin-top: 10px;">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                <RadzenButton Click="Logout" Text="Logout" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenHeader>
+
+
+   
+
+    <RadzenNotification />
+    <RadzenDialog />
+    <RadzenTooltip />
+    <RadzenContextMenu />
+
+    <RadzenBody>
+        <div class="rz-p-4">
+            @Body
+        </div>
+    </RadzenBody>
+
+</RadzenLayout>
+
+@code {
+  
+
+    private void Logout()
+    {
+        _navigation.NavigateTo("/logout", true);
+    }
+
+}

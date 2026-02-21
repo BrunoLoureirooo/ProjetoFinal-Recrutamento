@@ -1,0 +1,24 @@
+﻿@using Radzen
+@using Radzen.Blazor
+
+@inject DialogService DialogService
+
+<RadzenCard Style="width: 100%;">
+    <RadzenCardContent>
+        @if (!string.IsNullOrEmpty(QRCodeImageBase64))
+        {
+            <div style="display: flex; justify-content: center;">
+                <img src="@QRCodeImageBase64" alt="QR Code" style="max-width: 100%;" />
+            </div>
+        }
+        else
+        {
+            <p>A gerar QR Code...</p>
+        }
+    </RadzenCardContent>
+</RadzenCard>
+
+@code {
+    [Parameter]
+    public string? QRCodeImageBase64 { get; set; }
+}

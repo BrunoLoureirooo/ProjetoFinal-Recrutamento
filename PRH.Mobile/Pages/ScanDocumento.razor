@@ -1,0 +1,106 @@
+﻿@page "/"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+@attribute [Authorize]
+
+<div style="height: 100vh;" class="rz-d-flex rz-flex-column rz-justify-content-center rz-align-items-center">
+    <h2 class="rz-text-center">Ler o QR Code do Documento</h2>
+
+    <div class="rz-container" style="width: 100%; max-width: 800px; margin-top: 2rem;">
+        <RadzenPanel Style="margin-bottom:1rem;">
+            <video id="qrScanner" style="width:100%; height:auto; display:block;"></video>
+        </RadzenPanel>
+
+        <RadzenPanel Style="min-height:150px; width:100%; padding:1rem;">
+            @if (string.IsNullOrEmpty(qrCodeData))
+            {
+                <span style="color:#aaa;">Nenhum documento lido ainda</span>
+            }
+            else
+            {
+                <div> Documento com Id: @qrCodeData</div>
+            }
+        </RadzenPanel>
+    </div>
+</div>
+
+@code {
+    private string qrCodeData = string.Empty;
+    private DotNetObjectReference<ScanDocumento>? objRef;
+
+    private bool alreadyRedirected = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await Permissions.RequestAsync<Permissions.Camera>();
+
+                objRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("qrScanHelper.startScan", objRef);
+
+                Navigation.LocationChanged += OnLocationChanged;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("Erro ao iniciar scanner: " + ex.Message);
+            }
+        }
+
+        if (!string.IsNullOrEmpty(qrCodeData) && !alreadyRedirected)
+        {
+            alreadyRedirected = true;
+            var encoded = Uri.EscapeDataString(qrCodeData);
+            Navigation.NavigateTo($"/assinatura/{encoded}");
+        }
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        // Sempre parar o scan
+        try
+        {
+            if (objRef != null)
+                await JS.InvokeVoidAsync("qrScanHelper.stopScan", objRef);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Erro ao parar scanner (nav change): " + ex.Message);
+        }
+    }
+
+    [JSInvokable]
+    public Task OnQrCodeScanned(string qrCodeData)
+    {
+        this.qrCodeData = qrCodeData;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+
+        try
+        {
+            if (objRef != null)
+            {
+                await JS.InvokeVoidAsync("qrScanHelper.stopScan", objRef);
+                objRef.Dispose();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Erro ao parar scanner: " + ex.Message);
+        }
+    }
+
+    // Usado para o DotNetObjectReference
+    private class ScanPage { }
+}

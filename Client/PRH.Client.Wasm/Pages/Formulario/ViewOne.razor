@@ -1,0 +1,259 @@
+﻿@page "/formulario/{id}"
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Shared.DataTransferObjets.Formulario
+@using PRH.Shared.DataTransferObjets.Campo
+@using PRH.Client.Wasm.Shared.Components
+
+@inject IFormularioService FormularioService
+@inject IFormularioCampoService FormularioCampoService
+@inject ILookupService LookupService
+@inject ICampoService CampoService
+@inject Radzen.NotificationService NotificationService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+
+@if (formulario == null)
+{
+    <LoadingEntity Entity=@($"formulário {id}") />
+}
+else
+{
+    <HeaderWithSubtext Title=@($"Formulário de {formulario.Nome}") Subtext=@($"{formulario.Id}") />
+
+    <div class="container mt-4">
+        <!-- Tipo de Formulário -->
+        <div class="row mb-4">
+            <div class="col-12 col-md-6 d-flex flex-column gap-2">
+                <RadzenLabel Text="Tipo de Formulário" Component="DropDownTipoFormulario" />
+                <RadzenDropDown @bind-Value=@tipoValue
+                                Data=@nomesFormulariosTipos
+                                Change=@(args => OnTipoValueChanged(args?.ToString()))
+                                Style="width: 100%; max-width: 400px;"
+                                Name="DropDownTipoFormulario" />
+            </div>
+        </div>
+        <Card>
+
+            <div class="container">
+
+
+
+                <!-- Campos -->
+                <div class="row">
+                    <div class="col-12 d-flex justify-content-between align-items-center mt-1">
+                        <h3 class="fw-bold">Campos</h3>
+                        <RadzenButton Icon="add"
+                                      Class="btn btn-success"
+                                      Text="Adicionar Campo"
+                                      Click=@ShowCustomDialog />
+                    </div>
+                </div>
+
+                @if (camposAtivos.Any())
+                {
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <FormularioPreviewDialog Campos="@camposAtivos" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <RadzenDataGrid Data="@camposAtivos" TItem="FormularioCampoDto" Class="w-100 shadow-sm rounded-4">
+                                <Columns>
+                                    <RadzenDataGridColumn TItem="FormularioCampoDto" Property="Campo.Nome" Title="Nome do Campo">
+                                        <Template Context="campo">
+                                            <div class="d-flex justify-content-between align-items-center p-2">
+                                                <h5 class="mb-0 text-dark">@campo.Campo.Nome</h5>
+                                                <RadzenButton Icon="delete"
+                                                              Tooltip="Remover Campo"
+                                                              Click="@(args => ToggleCampo(campo))"
+                                                              Class="btn btn-danger"
+                                                              ButtonStyle="ButtonStyle.Danger" />
+                                            </div>
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                </Columns>
+                            </RadzenDataGrid>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <EmptyListWarning Entity="campos" Parent="o formulário" />
+                }
+
+                <!-- Botão Salvar -->
+                <div class="row">
+                    <div class="col-12 d-flex gap-2">
+                        <RadzenButton Icon="save" Text="Salvar Alterações" Class="btn btn-primary" Click="@Salvar" />
+                    </div>
+                </div>
+
+            </div>
+        </Card>
+    </div>
+}
+
+@code {
+    [Parameter] public string id { get; set; }
+
+    private FormularioGetOneDto formulario;
+    private IEnumerable<CampoGetDto> campos;
+    private IEnumerable<LookupDto> FormularioTipos;
+    private IEnumerable<LookupDto> CampoTipos;
+
+    private List<string> nomesFormulariosTipos = new();
+    private List<FormularioCampoDto> camposAlterados = new();
+    private string tipoValue = "";
+    private string novoTipoFormulario = "";
+
+    private IEnumerable<FormularioCampoDto> camposAtivos =>
+        formulario.FormularioCampos.Concat(camposAlterados).Where(c => c.Ativo);
+
+    protected override async Task OnInitializedAsync()
+    {
+        formulario = await FormularioService.GetFormularioByIdAsync(Guid.Parse(id));
+
+        if (formulario == null)
+        {
+            Warning("Atenção", "Formulário não encontrado");
+            return;
+        }
+
+        FormularioTipos = await LookupService.GetTiposFormularioAsync();
+        nomesFormulariosTipos = FormularioTipos?.Select(f => f.Descricao).ToList() ?? new();
+        tipoValue = formulario.TipoFormulario?.Descricao ?? "";
+    }
+
+    private async Task ShowCustomDialog()
+    {
+        campos = await CampoService.GetCamposAsync();
+        CampoTipos = await LookupService.GetTiposCampoAsync();
+
+        if (formulario?.Id == null || formulario?.TipoFormulario == null)
+        {
+            Warning("Atenção", "Formulário e Tipo não podem ser nulos");
+            return;
+        }
+
+        var result = await DialogService.OpenAsync<CampoSelectDialog>("Adicionar Campo",
+            new Dictionary<string, object> {
+                { "Fields", campos },
+                { "FieldTypes", CampoTipos }
+                    });
+
+        if (result is IEnumerable<CampoGetDto> selectedCampos)
+        {
+            foreach (var campo in selectedCampos)
+            {
+                if (campo.TipoCampo == null && !campo.TipoId.Equals(Guid.Empty))
+                    campo.TipoCampo = await LookupService.GetTipoCampoByIdAsync(campo.TipoId);
+
+                var existente = formulario.FormularioCampos.FirstOrDefault(fc => fc.CampoId == campo.Id);
+
+                if (existente != null && !existente.Ativo)
+                    await ToggleCampo(existente);
+                else
+                    CreateFormularioCampo(campo);
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private void CreateFormularioCampo(CampoGetDto campo)
+    {
+        if (formulario.FormularioCampos.Any(fc => fc.CampoId == campo.Id))
+        {
+            Warning("Campo Duplicado", $"O campo \"{campo.Nome}\" já foi adicionado ao formulário.");
+            return;
+        }
+
+        camposAlterados.Add(new FormularioCampoDto
+            {
+                CampoId = campo.Id,
+                Campo = campo,
+                FormularioId = formulario.Id,
+                Ativo = true
+            });
+    }
+
+    private async Task ToggleCampo(FormularioCampoDto campo)
+    {
+        if (campo == null)
+        {
+            Warning("Campo não encontrado", "O campo selecionado não foi encontrado.");
+            return;
+        }
+
+        campo.Ativo = !campo.Ativo;
+        await FormularioCampoService.ToggleFormularioCampo(campo.Id, !campo.Ativo);
+        StateHasChanged();
+    }
+
+    private Task OnTipoValueChanged(string newValue)
+    {
+        novoTipoFormulario = newValue;
+        var tipo = FormularioTipos?.FirstOrDefault(t => t.Descricao == newValue);
+        if (tipo != null)
+            formulario.TipoFormulario = tipo;
+
+        return Task.CompletedTask;
+    }
+
+
+    private async Task Salvar()
+    {
+        try
+        {
+            if (formulario?.Id == null)
+            {
+                Warning("Atenção", "Formulário não pode ser nulo");
+                return;
+            }
+
+            var tipoSelecionado = FormularioTipos?.FirstOrDefault(t => t.Descricao == novoTipoFormulario);
+            if (tipoSelecionado != null)
+            {
+                var updateDto = new FormularioUpdateDto
+                    {
+                        Nome = formulario.Nome,
+                        NomeUnico = formulario.NomeUnico,
+                        TipoFormulario = tipoSelecionado
+                    };
+
+                await FormularioService.UpdateFormularioAsync(formulario.Id, updateDto);
+            }
+
+            foreach (var campo in camposAlterados)
+                await FormularioCampoService.CreateFormularioCampoAsync(campo);
+
+            formulario = await FormularioService.GetFormularioByIdAsync(Guid.Parse(id));
+            camposAlterados.Clear();
+            Success("Sucesso", "Alterações gravadas com sucesso");
+        }
+        catch (Exception ex)
+        {
+            Failure("Erro inesperado", $"Não foi possível salvar: {ex.Message}");
+        }
+    }
+
+    private void Success(string summary, string detail) => Notify(NotificationSeverity.Success, summary, detail);
+    private void Failure(string summary, string detail) => Notify(NotificationSeverity.Error, summary, detail);
+    private void Warning(string summary, string detail) => Notify(NotificationSeverity.Warning, summary, detail);
+
+    private void Notify(NotificationSeverity severity, string summary, string detail)
+    {
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = severity,
+                Summary = summary,
+                Detail = detail,
+                Duration = 4000
+            });
+    }
+}

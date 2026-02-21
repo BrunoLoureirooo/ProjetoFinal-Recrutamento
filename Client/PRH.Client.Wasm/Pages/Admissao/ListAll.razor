@@ -1,0 +1,181 @@
+﻿@page "/admissoes"
+@using PRH.Client.Wasm.ViewModels
+@using PRH.Shared.DataTransferObjets.Admissao
+
+@inject IAdmissaoService AdmissaoService
+@inject IEmpresaService EmpresaService
+@inject AdmissaoFilterStateService FilterState
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+
+@inherits Notifications
+
+@attribute [Authorize]
+
+@if (_admissoes is null)
+{
+    <LoadingEntity Entity="admissoes" />
+}
+else
+{
+    <Header Title="Lista de Admissões" />
+    <div class="container mt-4">
+        <FilterCard>
+            <div class="col-12 col-md-6">
+                <RadzenTextBox
+                Placeholder="Nome do candidato..."
+                @bind-Value="_nomeCandidatoFiltro" 
+                class="w-100"/>
+            </div>
+            <div class="col-12 col-md-6">
+                <RadzenTextBox
+                Placeholder="Nome do recrutamento..."
+                @bind-Value="_nomeRecrutamentoFiltro" 
+                class="w-100"/>
+            </div>
+            <div class="col-12 col-md-6">
+                @if(_isAdministrador)
+                {
+                    <RadzenDropDown class="w-100"
+                    Placeholder="Empresa..."
+                    @bind-Value="@_empresaFiltro"
+                    Data="@_empresas"
+                    TextProperty="Nome" />
+                }
+            </div>
+            <div class="col-lg-2"></div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <RadzenButton Icon="search"
+                Text="Filtrar"
+                Click="@ApplyFilters"
+                Class="btn btn-primary w-100" />
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <RadzenButton Icon="mop"
+                Text="Limpar"
+                Click="@(() => CleanFilters(true))"
+                Class="btn btn-primary w-100"/>
+            </div>
+        </FilterCard>
+
+        <ListAllGrid TItem="AdmissaoGetAllDto"
+        Entities="@_admissoes"
+        MetaData="@_metaData"
+        OnGridLoadData="@OnGridLoadData"
+        PageSize="@_pageSize"
+        CurPage="@_curPage"
+        EntityName="admissoes">
+            <RowTemplate Context="admissoes">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">
+                            @admissoes.NomeCandidato
+                        </h5>
+                        <p>
+                            @admissoes.RecrutamentoNome
+                        </p>
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                                      Click="@(args => NavigateToAdmissao(admissoes.Id))"
+                                      Class="btn btn-primary" />
+                        <RadzenButton Icon="docs" Tooltip="Ver documentos"
+                                        Click="@(args => SeeAdmissaoDocuments(admissoes.Id))"
+                                        Class="btn btn-primary" />
+                    </Buttons>
+                </EntityCard>
+            </RowTemplate>
+        </ListAllGrid>
+
+    </div>
+}
+
+
+@code {
+
+    private IEnumerable<AdmissaoGetAllDto> _admissoes;
+    private IEnumerable<EmpresaDto> _empresas;
+    private MetaDataDto _metaData;
+    private int _curPage = 1, _pageSize = 10;
+
+    private string? _nomeCandidatoFiltro;
+    private string? _nomeRecrutamentoFiltro;
+    private EmpresaDto _empresaFiltro;
+
+    private bool _isAdministrador;
+
+    private async Task LoadAdmissoes()
+    {
+        PagedListDto<AdmissaoGetAllDto> list = await AdmissaoService.GetAdmissoesPaginatedAsync(
+            _curPage,
+            _pageSize,
+            _nomeCandidatoFiltro,
+            _nomeRecrutamentoFiltro,
+            _empresaFiltro
+        );
+
+        _admissoes = list.Items;
+        _metaData = list.MetaData;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _isAdministrador = authState.User.IsInRole("Administrador");
+
+        _nomeCandidatoFiltro = FilterState.NomeCandidato;
+        _nomeRecrutamentoFiltro = FilterState.NomeRecrutamento;
+        _empresaFiltro = FilterState.Empresa;
+
+        if (_isAdministrador)
+            _empresas = await EmpresaService.GetEmpresasAsync();
+        else
+            _empresas = new List<EmpresaDto>();
+
+        await LoadAdmissoes();
+    }
+
+    private void NavigateToAdmissao(Guid admissaoId)
+    {
+        NavigationManager.NavigateTo($"/admissao/{admissaoId}");
+    }
+
+    private void SeeAdmissaoDocuments(Guid admissaoId)
+    {
+        NavigationManager.NavigateTo($"/admissoes/documentos/{admissaoId}");
+    }
+
+    private void SaveFilters()
+    {
+        FilterState.NomeCandidato = _nomeCandidatoFiltro;
+        FilterState.NomeRecrutamento = _nomeRecrutamentoFiltro;
+        FilterState.Empresa = _empresaFiltro;
+    }
+
+    private async Task ApplyFilters()
+    {
+        SaveFilters();
+        _admissoes = null;
+        await LoadAdmissoes();
+    }
+
+    private async Task CleanFilters(bool reload)
+    {
+        _nomeCandidatoFiltro = null;
+        _nomeRecrutamentoFiltro = null;
+        _empresaFiltro = null;
+        SaveFilters();
+
+        if (reload)
+            await LoadAdmissoes();
+    }
+
+    private async Task OnGridLoadData(LoadDataArgs args)
+    {
+        _curPage = ((int)args.Skip / (int)args.Top) + 1;
+        _pageSize = args.Top ?? 10;
+
+        await LoadAdmissoes();
+    }
+
+}

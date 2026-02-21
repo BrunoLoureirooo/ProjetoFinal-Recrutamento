@@ -1,0 +1,8 @@
+﻿<Card>
+    <div class="row g-3">
+        @ChildContent
+    </div>
+</Card>
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+}

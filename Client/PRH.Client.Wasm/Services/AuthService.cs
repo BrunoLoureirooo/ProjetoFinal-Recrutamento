@@ -1,17 +1,10 @@
-using System;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
-
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using PRH.Client.Wasm.Auth;
 using PRH.Shared.DataTransferObjets;
-using PRH.Client.Wasm.Services.Contracts;
+using PRH.Shared.Contracts;
 
 namespace PRH.Client.Wasm.Services;
 

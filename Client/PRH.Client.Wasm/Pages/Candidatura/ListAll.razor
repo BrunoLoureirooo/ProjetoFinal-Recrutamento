@@ -1,0 +1,189 @@
+﻿@page "/candidaturas"
+
+@inject ICandidaturaService CandidaturaService
+@inject IEmpresaService EmpresaService
+@inject ILookupService LookupService
+@inject CandidaturaFilterStateService FilterState
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+
+@attribute [Authorize]
+
+@if (_candidaturas is null || _empresas is null || _estados is null)
+{
+    <LoadingEntity Entity="candidaturas" />
+}
+else
+{
+    <Header Title="Lista de Candidaturas" />
+    <div class="container mt-4">
+        <FilterCard>
+            <div class="col-12 col-lg-6">
+                <RadzenTextBox class="w-100"
+                Placeholder="Nome do recrutamento..."
+                @bind-Value="_recrutamentoNomeFiltro" />
+            </div>
+            <div class="col-12 col-lg-6">
+                <RadzenTextBox class="w-100"
+                Placeholder="Nome do candidato..."
+                @bind-Value="_candidatoNomeFiltro" />
+            </div>
+            @if (_isAdministrador)
+            {
+                <div class="col-6 col-lg-3">
+                    <RadzenDropDown Placeholder="Empresa..."
+                                        class="w-100"
+                                        @bind-Value=@_empresaFiltro
+                                        Data=@_empresas
+                                        TextProperty="Nome" />
+                </div>
+                <div class="col-6 col-lg-3">
+                    <RadzenDropDown class="w-100"
+                                    Placeholder="Estado..."
+                                    @bind-Value="_estadoFiltro"
+                                    Data="@_estados"
+                                    TextProperty="Descricao" />
+                </div>
+            }
+            else
+            {
+                <div class="col-12 col-lg-6">
+                    <RadzenDropDown class="w-100"
+                                    Placeholder="Estado..."
+                                    @bind-Value="_estadoFiltro"
+                                    Data="@_estados"
+                                    TextProperty="Descricao" />
+                </div>
+            }
+            <div class="col-lg-2"></div>
+            <div class="col-6 col-lg-2">
+                <RadzenButton Icon="search" Text="Filtrar"
+                Click="@ApplyFilters"
+                Class="btn btn-primary w-100" />
+            </div>
+            <div class="col-6 col-lg-2">
+                <RadzenButton Icon="mop" Text="Limpar"
+                Click="@CleanFilters"
+                Class="btn btn-primary w-100" />
+            </div>
+        </FilterCard>
+
+        <ListAllGrid TItem="CandidaturaGetAllDto"
+        Entities="@_candidaturas"
+        MetaData="@_metaData"
+        OnGridLoadData="@OnGridLoadData"
+        PageSize="@_pageSize"
+        CurPage="@_curPage"
+        EntityName="candidaturas">
+            <RowTemplate Context="candidatura">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">
+                            Candidatura ao recrutamento "@candidatura.RecrutamentoNome"
+                        </h5>
+                        <p class="mb-0 text-muted small">Para a empresa @candidatura.EmpresaNome</p>
+                        <p class="mb-0 text-muted small">Submetida por @candidatura.NomeCandidato</p>
+                        <p class="mb-0 text-muted small">@candidatura.Estado.Descricao</p>
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                        Click="@(args => NavigateToCandidatura(candidatura.Id))"
+                        Class="btn btn-primary" />
+                    </Buttons>
+                </EntityCard>
+            </RowTemplate>
+        </ListAllGrid>
+    </div>
+}
+
+
+@code {
+    private IEnumerable<CandidaturaGetAllDto> _candidaturas;
+    private IEnumerable<EmpresaDto> _empresas;
+    private IEnumerable<LookupDto> _estados;
+    private MetaDataDto _metaData;
+    private int _curPage = 1, _pageSize = 10;
+
+    private EmpresaDto _empresaFiltro;
+    private LookupDto _estadoFiltro;
+    private string? _recrutamentoNomeFiltro;
+    private string? _candidatoNomeFiltro;
+
+    private bool _isAdministrador;
+
+    private async Task LoadCandidaturas()
+    {
+        PagedListDto<CandidaturaGetAllDto> list = await CandidaturaService.GetCandidaturasPaginatedAsync(
+            _curPage,
+            _pageSize,
+            _recrutamentoNomeFiltro,
+            _candidatoNomeFiltro,
+            _empresaFiltro,
+            _estadoFiltro
+        );
+
+        _candidaturas = list.Items;
+        _metaData = list.MetaData;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        _isAdministrador = authState.User.IsInRole("Administrador");
+
+        _empresaFiltro = FilterState.Empresa;
+        _estadoFiltro = FilterState.Estado;
+        _recrutamentoNomeFiltro = FilterState.RecrutamentoNome;
+        _candidatoNomeFiltro = FilterState.CandidatoNome;
+
+        if (_isAdministrador)
+            _empresas = await EmpresaService.GetEmpresasAsync();
+        else
+            _empresas = new List<EmpresaDto>();
+
+        _estados = await LookupService.GetEstadosAsync();
+        await LoadCandidaturas();
+    }
+
+    private void NavigateToCandidatura(Guid candidaturaId)
+    {
+        NavigationManager.NavigateTo($"/candidatura/{candidaturaId}");
+    }
+
+    private void SaveFilters()
+    {
+        FilterState.RecrutamentoNome = _recrutamentoNomeFiltro;
+        FilterState.CandidatoNome = _candidatoNomeFiltro;
+        FilterState.Empresa = _empresaFiltro;
+        FilterState.Estado = _estadoFiltro;
+    }
+
+    private async Task ApplyFilters()
+    {
+        SaveFilters();
+        _candidaturas = null;
+        await LoadCandidaturas();
+    }
+
+    private async Task CleanFilters()
+    {
+        _recrutamentoNomeFiltro = null;
+        _candidatoNomeFiltro = null;
+        _empresaFiltro = null;
+        _estadoFiltro = null;
+        SaveFilters();
+
+        _candidaturas = null;
+        await LoadCandidaturas();
+    }
+
+    private async Task OnGridLoadData(LoadDataArgs args)
+    {
+        _curPage = ((int)args.Skip / (int)args.Top) + 1;
+        _pageSize = args.Top ?? 10;
+
+        await LoadCandidaturas();
+    }
+}
+

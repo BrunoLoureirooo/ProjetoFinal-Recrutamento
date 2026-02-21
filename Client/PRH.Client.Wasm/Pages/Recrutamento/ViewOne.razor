@@ -1,0 +1,249 @@
+﻿@page "/recrutamento/{Id}"
+@using PRH.Client.Wasm.ViewModels
+@using PRH.Shared.DataTransferObjets.Cargo
+
+@inject IRecrutamentoService RecrutamentoService
+@inject IVagaService VagaService
+@inject IFormularioService FormularioService
+@inject ILookupService LookupService
+@inject ICargoService CargoService
+@inject VagaFilterStateService FilterState
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+
+@inherits Notifications
+
+@attribute [Authorize]
+
+@if (_recrutamento is null)
+{
+    <LoadingEntity Entity=@($"recrutamento {Id}")/>
+}
+else
+{
+    <HeaderWithSubtext 
+    Title=@_recrutamento.Nome
+    Subtext=@($"{_recrutamento.Id}") 
+    />
+    <div class="container mt-4">
+
+        <h5>@_recrutamento.Empresa?.Nome, @_recrutamento.Data.ToString("dd/MM/yyyy")</h5>
+        <h5>Total de @_recrutamento.TotalVagas vagas</h5>
+        <h5 style="display: inline;">Cargos: </h5>
+        @foreach (var cargo in _recrutamento.Cargos)
+        {
+            <span class="badge mx-2 bg-secondary">@cargo</span>
+        }
+        <div class="d-flex justify-content-between align-items-center">
+            <p class="fw-bold mt-4">Vagas:</p>
+            <RadzenButton Text="Adicionar"
+            Icon="add_circle"
+            Class="btn btn-success"
+            Tooltip="Adicionar Vaga"
+            Click=@(NewVaga) />
+        </div>
+
+        <FilterCard>
+            <div class="col-12 col-lg-6">
+                <RadzenTextBox class="w-100"
+                Placeholder="Descrição..."
+                @bind-Value="_descricaoFiltro" />
+            </div>
+            <div class="col-12 col-lg-6">
+                <RadzenDropDown Placeholder="Cargo..."
+                class="w-100"
+                @bind-Value=@_cargoFiltro
+                Data=@_cargos
+                TextProperty="@nameof(CargoGetAllDto.Nome)" />
+            </div>
+            <div class="col-4">
+                <RadzenDropDown class="w-100"
+                Placeholder="Modalidade..."
+                @bind-Value="_modalidadeFiltro"
+                Data="@_modalidades"
+                TextProperty="Descricao" />
+            </div>
+            <div class="col-4">
+                <RadzenDropDown class="w-100"
+                Placeholder="Tipo de vaga..."
+                @bind-Value="_tipoVagaFiltro"
+                Data="@_tiposVaga"
+                TextProperty="Descricao" />
+            </div>
+            <div class="col-4">
+                <RadzenDropDown class="w-100"
+                Placeholder="Disponível..."
+                @bind-Value="_candDisponiveisFiltro"
+                Data="@_candidaturasDisponiveisOptions"
+                TextProperty="Label"
+                ValueProperty="Value" />
+            </div>
+            <div class="col-12 col-md-6">
+                <RadzenButton Icon="search" Text="Filtrar"
+                Click="@ApplyFilters"
+                Class="btn btn-primary w-100" />
+            </div>
+            <div class="col-12 col-md-6">
+                <RadzenButton Icon="mop" Text="Limpar Filtros"
+                Click="@CleanFilters"
+                Class="btn btn-primary w-100" />
+            </div>
+        </FilterCard>
+
+        <ListAllGrid TItem="VagaGetOneRecrutamentoDto"
+        Entities="@_filteredVagas"
+        EntityName="vagas"
+        PageSize="5">
+            <RowTemplate Context="vaga">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">
+                            @vaga.NumVagas vagas para @vaga.Cargo?.Nome @vaga.TipoVaga?.Descricao
+                        </h5>
+                        <p class="mb-0 text-muted small">@vaga.Modalidade?.Descricao</p>
+                        <div class="d-flex align-items-center gap-2">
+                            <p class="mb-0 text-muted small">Disponivel:</p>
+                            @if (vaga.CandidaturaDisponivel)
+                            {
+                                <RadzenIcon Icon="check_circle" IconColor="@Colors.Success" />
+                            }
+                            else
+                            {
+                                <RadzenIcon Icon="cancel" IconColor="@Colors.Danger" />
+                            }
+                        </div>
+                        <p class="mb-0 text-muted small text-truncate" style="max-width: 300px;">@vaga.Descricao</p>
+
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                        Click="@(args => NavigateToVaga(vaga.Id))"
+                        Class="btn btn-primary" />
+                    </Buttons>
+                </EntityCard>
+            </RowTemplate>
+        </ListAllGrid>
+
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; }
+
+    private RecrutamentoGetOneDto _recrutamento;
+    private IEnumerable<VagaGetOneRecrutamentoDto> _filteredVagas;
+    private IEnumerable<LookupDto> _modalidades;
+    private IEnumerable<LookupDto> _tiposVaga;
+    private IEnumerable<CargoGetAllDto> _cargos;
+    private IEnumerable<FormularioGetAllDto> _formularios;
+
+    private LookupDto _modalidadeFiltro;
+    private LookupDto _tipoVagaFiltro;
+    private CargoGetAllDto _cargoFiltro;
+    private bool? _candDisponiveisFiltro;
+    private string? _descricaoFiltro;
+    private List<DropdownOption<bool?>> _candidaturasDisponiveisOptions = new()
+    {
+        new DropdownOption<bool?>("Todas", null),
+        new DropdownOption<bool?>("Candidatura disponível", true),
+        new DropdownOption<bool?>("Candidatura indisponível", false)
+    };
+
+
+    private async Task LoadRecrutamento()
+    {
+        _recrutamento = null;
+        _filteredVagas = null;
+
+        _recrutamento = await RecrutamentoService.GetRecrutamentoByIdAsync(Guid.Parse(Id));
+
+        _filteredVagas = _recrutamento.Vagas.OrderBy(x => x.Descricao);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _modalidadeFiltro = FilterState.Modalidade;
+        _tipoVagaFiltro = FilterState.TipoVaga;
+        _cargoFiltro = FilterState.Cargo;
+        _candDisponiveisFiltro = FilterState.CandDisponiveis;
+        _descricaoFiltro = FilterState.Descricao;
+
+        _modalidades = await LookupService.GetModalidadesAsync();
+        _tiposVaga = await LookupService.GetTiposVagaAsync();
+        _cargos = await CargoService.GetCargosAsync();
+        _formularios = await FormularioService.GetFormulariosAsync();
+
+        await LoadRecrutamento();
+    }
+
+    private void NavigateToVaga(Guid vagaId)
+    {
+        NavigationManager.NavigateTo($"/vaga/{vagaId}");
+    }
+
+    private async Task NewVaga()
+    {
+        var result = await DialogService.OpenAsync<RecrutamentoNewVagaDialog>(
+            "Adicionar vaga",
+            new Dictionary<string, object> {
+                { "Formularios", _formularios },
+                { "Cargos", _cargos },
+                { "TiposVaga", _tiposVaga },
+                { "Modalidades", _modalidades },
+                { "RecrutamentoId", Id}
+                },
+            new DialogOptions
+                {
+                    Width = "50%",
+                    Height = "50%",
+                    CloseDialogOnOverlayClick = true
+                }
+        );
+
+        if (result is not null && result) await LoadRecrutamento();
+    }
+
+    private void SaveFilters()
+    {
+        FilterState.Modalidade = _modalidadeFiltro;
+        FilterState.TipoVaga = _tipoVagaFiltro;
+        FilterState.Cargo = _cargoFiltro;
+        FilterState.CandDisponiveis = _candDisponiveisFiltro;
+        FilterState.Descricao = _descricaoFiltro;
+    }
+
+    private void ApplyFilters()
+    {
+        SaveFilters();
+        _filteredVagas = _recrutamento.Vagas;
+
+        if (_modalidadeFiltro is not null)
+            _filteredVagas = _filteredVagas.Where(v => v.Modalidade.Id.Equals(_modalidadeFiltro.Id)).ToList();
+
+        if (_tipoVagaFiltro is not null)
+            _filteredVagas = _filteredVagas.Where(v => v.TipoVaga.Id.Equals(_tipoVagaFiltro.Id)).ToList();
+
+        if (_cargoFiltro is not null)
+            _filteredVagas = _filteredVagas.Where(v => v.Cargo.Id.Equals(_cargoFiltro.Id)).ToList();
+
+        if (_candDisponiveisFiltro is not null)
+            _filteredVagas = _filteredVagas.Where(v => v.CandidaturaDisponivel.Equals(_candDisponiveisFiltro)).ToList();
+
+        if (_descricaoFiltro is not null)
+            _filteredVagas = _filteredVagas.Where(v => v.Descricao.ToLower().Contains(_descricaoFiltro.ToLower())).ToList();
+
+        _filteredVagas = _filteredVagas.OrderBy(x => x.Descricao).ToList();
+    }
+
+    private void CleanFilters()
+    {
+        _modalidadeFiltro = null;
+        _tipoVagaFiltro = null;
+        _cargoFiltro = null;
+        _candDisponiveisFiltro = null;
+        _descricaoFiltro = null;
+        SaveFilters();
+
+        _filteredVagas = _recrutamento.Vagas;
+    }
+}

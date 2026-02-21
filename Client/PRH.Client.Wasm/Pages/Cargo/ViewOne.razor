@@ -1,0 +1,61 @@
+﻿@page "/cargo/{Id}"
+@using PRH.Client.Wasm.ViewModels
+@using PRH.Shared.DataTransferObjets.Cargo
+
+@inject ICargoService CargoService
+@inject NavigationManager NavigationManager
+
+
+@inherits Notifications
+
+@attribute [Authorize]
+
+@if (_cargo is null)
+{
+    <LoadingEntity Entity=@($"cargo {Id}")/>
+}
+else
+{
+    <HeaderWithSubtext 
+    Title=@_cargo.Nome
+    Subtext=@($"{_cargo.Id}") 
+    />
+    <div class="container mt-4">
+        <ListAllGrid TItem="TipoDocumentoGetOneCargoDto"
+        Entities="@_cargo.TiposDocumento"
+        EntityName="documentos necessários"
+        PageSize="5">
+            <RowTemplate Context="tipo">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">@tipo.Nome</h5>
+                        <p class="mb-0 text-muted small">@(tipo.Assinavel ? "Assinável" : "Não Assinável")</p>
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                                      Click="@(args => NavigateToTipoDocumento(tipo.Id))"
+                        Class="btn btn-primary" />
+                    </Buttons>
+                </EntityCard>
+            </RowTemplate>
+        </ListAllGrid>
+
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; }
+
+    private CargoGetOneDto _cargo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _cargo = null;
+        _cargo = await CargoService.GetCargoByIdAsync(Guid.Parse(Id));
+    }
+
+    private void NavigateToTipoDocumento(Guid tipoId)
+    {
+        NavigationManager.NavigateTo($"/tipoDocumentos/{tipoId}");
+    }
+}

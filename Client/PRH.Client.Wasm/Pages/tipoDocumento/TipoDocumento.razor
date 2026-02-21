@@ -1,0 +1,113 @@
+﻿@page "/tipoDocumentos/{id}"
+@using Microsoft.AspNetCore.Authorization
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Client.Wasm.Shared.Components
+@using PRH.Shared.DataTransferObjets
+@inject Radzen.DialogService DialogService
+@inject ITipoDocumentoService TipoDocumentoService
+@inject IEmpresaService EmpresaService
+@inject NavigationManager NavigationManager
+@using Radzen.Blazor
+
+@attribute [Authorize]
+
+<h1>Edição do Tipo de Documento: <b>@(tipo?.Nome ?? "Carregando...")</b></h1>
+
+@if (isLoading)
+{
+    <LoadingEntity Entity=@($"Tipo de Documento {id}") />
+}
+else if (tipo != null)
+{
+
+    <RadzenStack Orientation="Orientation.Vertical" Style="margin-top:20px; margin-left:auto; margin-right:auto;">
+        <RadzenFieldset Text="Dados do Tipo de Documento">
+            <RadzenStack Orientation="Orientation.Vertical" Style="margin-bottom:10px;">
+
+                <div>
+                    <RadzenLabel Text="Nome" Component="Nome" Style="display:block; margin-bottom:4px;" />
+                    <RadzenTextBox @bind-Value="tipo.Nome" Name="Nome" Style="width:100%;" />
+                </div>
+
+                <div>
+                    <RadzenLabel Text="Assinável" Component="Assinavel" Style="display:block; margin-bottom:4px;" />
+                    <RadzenSwitch @bind-Value="tipo.Assinavel" Name="Assinavel" />
+                </div>
+
+                <div>
+                    <RadzenLabel Text="Empresas" Component="EmpresaIds" Style="display:block; margin-bottom:4px;" />
+                    <RadzenDropDown TItem="EmpresaDto" TValue="IEnumerable<Guid>" Data="@empresas" TextProperty="Nome"
+                        ValueProperty="Id" Value="@selectedEmpresaIds" ValueChanged="@( (IEnumerable<Guid> args) =>
+                                                                                              {
+                                                                                                  selectedEmpresaIds = args.ToList();
+                                                                                              })" Multiple="true" Placeholder="Selecione uma ou mais empresas" Name="EmpresaIds"
+                    Style="width:100%;" />
+            </div>
+
+                                   </RadzenStack>
+
+                                   <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End"
+                                       AlignItems="AlignItems.Center" Gap="10px">
+                                       <RadzenButton Text="Cancelar" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@OnCancel" />
+                                       <RadzenButton Text="Salvar Alterações" Icon="save" ButtonStyle="ButtonStyle.Primary" Click="@OnSubmit" />
+                                   </RadzenStack>
+
+                               </RadzenFieldset>
+                           </RadzenStack>
+}
+
+@code {
+    [Parameter] public string id { get; set; } = string.Empty;
+
+    private TipoDocumentoDto? tipo;
+    private List<EmpresaDto> empresas = new();
+    private List<Guid> selectedEmpresaIds = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            tipo = await TipoDocumentoService.GetTipoDocumentoByIdAsync(Guid.Parse(id));
+            empresas = (await EmpresaService.GetEmpresasAsync()).ToList();
+            selectedEmpresaIds = tipo.EmpresaTipoDocumentos
+            .Select(etd => etd.EmpresaId)
+            .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro ao carregar tipo: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        if (tipo is null)
+            return;
+
+        tipo.EmpresaTipoDocumentos = selectedEmpresaIds
+        .Select(id => new EmpresaTipoDocumentoDto { EmpresaId = id })
+        .ToList();
+
+        try
+        {
+            await TipoDocumentoService.UpdateTipoDocumentoAsync(Guid.Parse(id), tipo);
+            NavigationManager.NavigateTo("/tipoDocumentos");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro ao salvar alterações: {ex.Message}");
+            await DialogService.Alert("Não foi possível salvar as alterações.", "Erro");
+        }
+    }
+
+    private void OnCancel()
+    {
+        NavigationManager.NavigateTo("/tipoDocumentos");
+    }
+}

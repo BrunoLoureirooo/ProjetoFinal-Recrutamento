@@ -1,0 +1,409 @@
+﻿@page "/vaga/{Id}"
+@using System.Collections.ObjectModel
+
+@inject IVagaService VagaService
+@inject ILookupService LookupService
+@inject IFormularioService FormularioService
+@inject NavigationManager NavigationManager
+@inject CandidaturaFilterStateService FilterState
+@inject Radzen.NotificationService NotificationService
+@inject AuthenticationStateProvider AuthStateProvider
+
+@inherits Notifications
+
+@attribute [Authorize]
+
+@if (_vaga is null || _estados is null || _modalidades is null || _formularios is null)
+{
+    <LoadingEntity Entity=@($"vaga {Id}") />
+}
+else
+{
+    <HeaderWithSubtext Title=@($"Vaga para {_vaga.Cargo?.Nome}")
+    Subtext=@($"{_vaga.Id}") />
+    <div class="container mt-4">
+        <div class="d-flex gap-2 justify-content-end mb-2">
+            <RadzenButton Text="Ver Recrutamento"
+                          Icon="visibility"
+                          Class="btn btn-success"
+                          Tooltip="Ver Recrutamento"
+                          Click="@(() => NavigateToRecrutamento(_vaga.RecrutamentoId))" />
+        </div>
+        <Card>
+            <div class="container">
+                <!-- Cargo -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h3><strong>Cargo:</strong> @_vaga.Cargo?.Nome</h3>
+                    </div>
+                </div>
+
+                <!-- Two Stacked Columns -->
+                <div class="row text-start">
+                    <!-- Left Column: Tipo + Número -->
+                    <div class="col-12 col-md-4 d-flex flex-column gap-2">
+                        <RadzenLabel Text="Tipo de Vaga" Component="DropDownVaga" />
+                        <RadzenDropDown @bind-Value=@_tipoVaga
+                        Data=@_nomeTipoVaga
+                        Change=@(args => OnTipoValueChanged(args?.ToString()))
+                        Style="width: 100%; max-width: 400px;"
+                        Name="DropDownVaga"
+                        Disabled=@_disableEdit/>
+                        <RadzenLabel Text="Modalidade" Component="DropDownModalidade" />
+                        <RadzenDropDown @bind-Value=@_modalidade
+                        Data=@_nomeModalidade
+                        Change=@(args => OnModalidadeValueChanged(args?.ToString()))
+                        Style="width: 100%; max-width: 400px;"
+                        Name="DropDownModalidade"
+                        Disabled=@_disableEdit />
+
+                    </div>
+
+                    <!-- Center Column: Modalidade + Disponível -->
+                    <div class="col-12 col-md-4 d-flex flex-column gap-2 align-items-md-center">  
+                        <div class="d-flex flex-column gap-2">
+                            <RadzenLabel Text="Numero de Vagas" Component="NumVagas" />
+                            <RadzenNumeric ShowUpDown="false" Disabled=@_disableEdit @bind-Value=@_numVagas  Name="NumVagas"/>
+                        </div>
+
+                        <div class="d-flex align-items-center h-100 mt-4" style="@(!_disableEdit ? "cursor: pointer;" : null)" @onclick="ToggleDisponivel">
+                            <p class="mb-0 me-2">Disponível:</p>
+                            @if (_vaga.CandidaturaDisponivel)
+                            {
+                                <RadzenIcon Icon="check_circle" IconColor="@Colors.Success" />
+                            }
+                            else
+                            {
+                                <RadzenIcon Icon="cancel" IconColor="@Colors.Danger" />
+                            }
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Descrição -->
+                <div class="row mt-5">
+                    <div class="col-12">
+                        <p class="mb-0">Descrição: </p>
+                        <RadzenTextArea @bind-Value="@_vaga.Descricao" Rows="4" class="w-100" Disabled=@_disableEdit/>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <div>
+                    <h3 class="fw-bold mt-4">Formulários:</h3>
+                </div>
+                @if(!_disableEdit)
+                {
+                    <div class="d-flex align-items-center gap-2 mt-3">
+                        <RadzenDropDown Placeholder="Selecione um formulário..."
+                        @bind-Value=@_novoFormularioVaga
+                        Data=@_formularios
+                        TextProperty="@nameof(FormularioGetAllDto.Nome)"
+                        Class="w-100" />
+
+                        <RadzenButton Icon="add"
+                        Class="btn btn-success"
+                        Click=@AddFormulario />
+                    </div>
+                }
+            </div>
+            @if (_formulariosVaga.Any())
+            {
+                <RadzenDataGrid Data="@_formulariosVaga"
+                AllowPaging="true"
+                PageSize="5"
+                PageSizeOptions="@_pageSizeOptions"
+                TItem="FormularioGetAllDto"
+                Class="w-100 shadow-sm rounded-4">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="FormularioGetAllDto" Property="Nome" Title="Nome">
+                            <Template Context="formulario">
+                                <div class="d-flex justify-content-between align-items-center p-2">
+                                    <div>
+                                        <h5 class="mb-1 text-dark">
+                                            @formulario.Nome
+                                        </h5>
+                                    </div>
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="FormularioGetAllDto" Property="TipoFormulario.Descricao" Title="Descrição">
+                            <Template Context="formulario">
+                                <div class="d-flex justify-content-between align-items-center p-2">
+                                    <div>
+                                        <p class="mb-1 text-dark">
+                                            @formulario.TipoFormulario?.Descricao
+                                        </p>
+                                    </div>
+                                    <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                                    Click="@(args => NavigateToFormulario(formulario.Id))"
+                                    Class="btn btn-primary" />
+                                </div>
+
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                    </Columns>
+                </RadzenDataGrid>
+            }
+            else
+            {
+                <EmptyListWarning Entity="formularios" Parent="a vaga" />
+            }
+            <h3 class="fw-bold mt-4">Candidaturas:</h3>
+            @if (_vaga.Candidaturas.Any())
+            {
+                <FilterCard>
+                    <div class="col-12 col-lg-6">
+                        <RadzenTextBox class="w-100"
+                        Placeholder="Nome do candidato..."
+                        @bind-Value="_candidatoNomeFiltro" />
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <RadzenDropDown class="w-100"
+                        Placeholder="Estado..."
+                        @bind-Value="_estadoFiltro"
+                        Data="@_estados"
+                        TextProperty="Descricao" />
+                    </div>
+                    <div class="col-lg-6"></div>
+                    <div class="col-6 col-lg-3">
+                        <RadzenButton Icon="search" Text="Filtrar"
+                        Click="@ApplyFilters"
+                        Class="btn btn-primary w-100" />
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <RadzenButton Icon="mop" Text="Limpar"
+                        Click="@CleanFilters"
+                        Class="btn btn-primary w-100" />
+                    </div>
+                </FilterCard>
+            }
+
+            <ListAllGrid TItem="CandidaturaGetOneVagaDto"
+            PageSize="5"
+            Entities="@_filteredCandidaturas"
+            EntityName="candidaturas">
+                <RowTemplate Context="candidatura">
+                    <EntityCard>
+                        <Content>
+                            <h5 class="mb-1 text-dark">
+                                Candidatura por "@candidatura.NomeCandidato"
+                            </h5>
+                            <p class="mb-0 text-muted small">@candidatura.Estado.Descricao</p>
+                        </Content>
+                        <Buttons>
+                            <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                            Click="@(args => NavigateToCandidatura(candidatura.Id))"
+                            Class="btn btn-primary" />
+                        </Buttons>
+                    </EntityCard>
+                </RowTemplate>
+            </ListAllGrid>
+        </Card>
+        @if (!_disableEdit)
+        {
+            <div class="d-flex gap-2 mt-4">
+                <RadzenButton Icon="save" Text="Salvar" Class="btn btn-primary" Click="@Salvar" />
+            </div> 
+        }
+
+    </div>
+}
+
+
+@code {
+    [Parameter] public string Id { get; set; }
+
+    private int[] _pageSizeOptions { get; set; } = new[] { 5, 10, 15, 20 };
+
+
+    private AuthenticationState _authState = null;
+
+    private VagaGetOneDto _vaga;
+    private IEnumerable<FormularioGetAllDto> _formulariosVaga;
+    private IEnumerable<FormularioGetAllDto> _formularios;
+    private IEnumerable<CandidaturaGetOneVagaDto> _filteredCandidaturas;
+    private IEnumerable<LookupDto> _estados;
+    private IEnumerable<LookupDto> _vagaTipo;
+    private IEnumerable<LookupDto> _modalidades;
+
+
+    private LookupDto _estadoFiltro;
+    private string? _candidatoNomeFiltro;
+
+    private string _tipoVaga = "";
+    private string _novoTipoVaga = "";
+    private List<string> _nomeTipoVaga = new();
+
+    private string _modalidade = "";
+    private string _novoModalidade = "";
+    private List<string> _nomeModalidade = new();
+
+    private IEnumerable<FormularioGetAllDto> _novosFormulariosVaga = new List<FormularioGetAllDto>();
+    private FormularioGetAllDto _novoFormularioVaga;
+
+    private int _numVagas = 0;
+
+    private bool _disableEdit = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        @if (_authState is not null && _authState.User.IsInRole("Administrador"))
+        {
+            _disableEdit = false;
+        }
+
+
+        _estadoFiltro = FilterState.Estado;
+        _candidatoNomeFiltro = FilterState.CandidatoNome;
+
+        _vaga = await VagaService.GetVagaByIdAsync(Guid.Parse(Id));
+        _formulariosVaga = _vaga.Formularios;
+        _tipoVaga = _vaga.TipoVaga.Descricao;
+        _novoTipoVaga = _tipoVaga;
+        _vagaTipo = await LookupService.GetTiposVagaAsync();
+        _nomeTipoVaga = _vagaTipo?.Select(f => f.Descricao).ToList() ?? new();
+
+        _modalidade = _vaga.Modalidade.Descricao;
+        _novoModalidade = _modalidade;
+        _modalidades = await LookupService.GetModalidadesAsync();
+        _nomeModalidade = _modalidades?.Select(f => f.Descricao).ToList() ?? new();
+
+        _estados = await LookupService.GetEstadosAsync();
+
+        _formularios = await FormularioService.GetFormulariosAsync();
+
+        _numVagas = _vaga.NumVagas;
+
+        _filteredCandidaturas = _vaga.Candidaturas;
+    }
+
+    private void NavigateToRecrutamento(Guid recrutamentoId)
+    {
+        NavigationManager.NavigateTo($"/recrutamento/{recrutamentoId}");
+    }
+
+    private void NavigateToFormulario(Guid formularioId)
+    {
+        NavigationManager.NavigateTo($"/formulario/{formularioId}");
+    }
+
+    private void NavigateToCandidatura(Guid candidaturaId)
+    {
+        NavigationManager.NavigateTo($"/candidatura/{candidaturaId}");
+    }
+
+    private void SaveFilters()
+    {
+        FilterState.Estado = _estadoFiltro;
+        FilterState.CandidatoNome = _candidatoNomeFiltro;
+    }
+
+    private void ApplyFilters()
+    {
+        SaveFilters();
+        _filteredCandidaturas = _vaga.Candidaturas;
+
+        if (_estadoFiltro is not null)
+            _filteredCandidaturas = _filteredCandidaturas.Where(v => v.Estado.Id.Equals(_estadoFiltro.Id)).ToList();
+
+        if (_candidatoNomeFiltro is not null)
+            _filteredCandidaturas = _filteredCandidaturas.Where(v => v.NomeCandidato.ToLower().Contains(_candidatoNomeFiltro.ToLower())).ToList();
+    }
+
+    private void CleanFilters()
+    {
+        _candidatoNomeFiltro = null;
+        _estadoFiltro = null;
+        SaveFilters();
+
+        _filteredCandidaturas = _vaga.Candidaturas;
+    }
+
+    private Task OnTipoValueChanged(string newValue)
+    {
+        _novoTipoVaga = newValue;
+        return Task.CompletedTask;
+    }
+
+    private Task OnModalidadeValueChanged(string newValue)
+    {
+        _novoModalidade = newValue;
+        return Task.CompletedTask;
+    }
+
+    private void ToggleDisponivel()
+    {
+        if(_disableEdit == false)
+        {
+            _vaga.CandidaturaDisponivel = !_vaga.CandidaturaDisponivel;
+        }
+
+    }
+
+    private async Task Salvar()
+    {
+        try
+        {
+            if (_vaga?.Id == null)
+            {
+                Warning("Atenção", "Vaga não pode ser nula");
+                return;
+            }
+
+            var tipoSelecionado = _vagaTipo.FirstOrDefault(t => t.Descricao == _novoTipoVaga);
+            var modalidadeSelecionada = _modalidades.FirstOrDefault(m => m.Descricao == _novoModalidade);
+
+            if (tipoSelecionado == null || modalidadeSelecionada == null)
+            {
+                Warning("Atenção", "Tipo de vaga ou modalidade inválidos");
+                return;
+            }
+
+            Collection<Guid> fids = new();
+
+            foreach (var f in _novosFormulariosVaga)
+                fids.Add(f.Id);
+
+            var dto = new VagaUpdateDto
+                {
+                    Descricao = _vaga.Descricao,
+                    NumVagas = _numVagas,
+                    CandidaturaDisponivel = _vaga.CandidaturaDisponivel,
+                    TipoVagaId = tipoSelecionado.Id,
+                    ModalidadeId = modalidadeSelecionada.Id,
+                    FormularioIds = fids
+                };
+            await VagaService.UpdateVagaAsync(_vaga.Id, dto);
+
+            Success("Sucesso", "Alterações gravadas com sucesso");
+
+            _vaga = await VagaService.GetVagaByIdAsync(_vaga.Id);
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Failure("Erro inesperado", $"Não foi possível salvar: {ex.Message}");
+        }
+    }
+
+
+    private void AddFormulario()
+    {
+        if(_novoFormularioVaga is null)
+        {
+            Warning("Adicionar Formulario", "Nenhum formulário selecionado");
+            return;
+        }
+        _novosFormulariosVaga = _novosFormulariosVaga.Append(_novoFormularioVaga);
+        _formulariosVaga = _formulariosVaga.Append(_novoFormularioVaga);
+    }
+}

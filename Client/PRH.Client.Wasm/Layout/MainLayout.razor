@@ -1,29 +1,68 @@
 ﻿@inherits LayoutComponentBase
 
 @inject NavigationManager _navigation;
+@inject AuthenticationStateProvider AuthStateProvider;
+
+
+@using Microsoft.AspNetCore.Components.Authorization;
 
 <RadzenLayout>
-    
     <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10" >
-            <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />   
-        
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.End" Style="flex-grow: 1;">
-                <RadzenButton Click="Logout" Text="Logout"  />
-            </RadzenStack>
-
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10" Style="width: 100%;">
+            <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" /> 
+            <div style="flex-grow: 1;"></div>
+            <RadzenButton Click="Logout" Text="Logout" class="me-3"/>
         </RadzenStack>
     </RadzenHeader>
 
-    <RadzenSidebar @bind-Expanded="@sidebarExpanded">
+    <RadzenDialog />
+    <RadzenSidebar @bind-Expanded="@sidebarExpanded" Style="display: flex; flex-direction: column; height: 100%; ">
+        <div>
+            <RadzenPanelMenu>
+                <RadzenPanelMenuItem Text="Recrutamentos" Icon="warehouse" Path="/recrutamentos" />
+            </RadzenPanelMenu>
 
-        <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Home" Icon="home" Path="/" />
-        </RadzenPanelMenu>
+            <RadzenPanelMenu>
+                <RadzenPanelMenuItem Text="Candidaturas" Icon="person_apron" Path="/candidaturas" />
+            </RadzenPanelMenu>
 
-        <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Page1" Icon="work" Path="/page1" />
-        </RadzenPanelMenu>
+            <RadzenPanelMenu>
+                <RadzenPanelMenuItem Text="Entrevistas" Icon="article" Path="/entrevistas" />
+            </RadzenPanelMenu>
+
+            <RadzenPanelMenu>
+                <RadzenPanelMenuItem Text="Admissões" Icon="check_circle" Path="/admissoes" />
+            </RadzenPanelMenu>
+
+            <RadzenPanelMenu>
+                <RadzenPanelMenuItem Text="Templates" Icon="manufacturing" Path="/templates" />
+            </RadzenPanelMenu>
+
+            <RadzenPanelMenu>
+                <RadzenPanelMenuItem Text="Tipo de Documentos" Icon="manufacturing" Path="/tipoDocumentos" />
+            </RadzenPanelMenu>
+
+            <RadzenPanelMenu>
+                <RadzenPanelMenuItem Text="Formulários" Icon="assignment" Path="/formularios" />
+            </RadzenPanelMenu>
+
+            <RadzenPanelMenu>
+                <RadzenPanelMenuItem Text="Cargos" Icon="home_repair_service" Path="/cargos" />
+            </RadzenPanelMenu>
+
+        </div>
+        <div style="margin-top: auto;">
+            <RadzenPanelMenu Style="--icon-font-size: 42px;">
+                @if (authState is not null && !authState.User.IsInRole("Administrador"))
+                {
+                    <RadzenPanelMenuItem Text="Minha Conta" Icon="account_circle" Path="/dashboard" />
+                }
+                else
+                {
+                    <RadzenPanelMenuItem Text="Admin" Icon="account_circle" Disabled="true" />
+                }
+            </RadzenPanelMenu>
+        </div>
 
     </RadzenSidebar>
 
@@ -32,17 +71,26 @@
             @Body
         </div>
     </RadzenBody>
+    <RadzenDialog />
 
     @* <RadzenFooter>
         Footer
     </RadzenFooter> *@
 </RadzenLayout>
+<RadzenNotification />
 
 @code {
-     bool sidebarExpanded = true;
+    bool sidebarExpanded = true;
+    AuthenticationState authState = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        authState = await AuthStateProvider.GetAuthenticationStateAsync();
+    }
 
     private void Logout()
     {
         _navigation.NavigateTo("/logout", true);
+
     }
 }

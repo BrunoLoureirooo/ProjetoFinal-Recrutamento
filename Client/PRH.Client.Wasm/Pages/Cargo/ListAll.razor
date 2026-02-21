@@ -1,0 +1,102 @@
+﻿@page "/cargos"
+@using PRH.Shared.DataTransferObjets.Cargo
+
+@inject ICargoService CargoService
+@inject ITipoDocumentoService TipoDocumentoService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject DialogService DialogService
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize]
+
+@if (_cargos is null)
+{
+    <LoadingEntity Entity="cargos" />
+}
+else
+{
+    <HeaderWithButton Title="Lista de Cargos" 
+    OnClick="@NovoCargo"/>
+    <div class="container mt-4">
+        <ListAllGrid TItem="CargoGetAllDto"
+        Entities="@_cargos"
+        MetaData="@_metaData"
+        OnGridLoadData="@OnGridLoadData"
+        PageSize="@_pageSize"
+        CurPage="@_curPage"
+        EntityName="cargos">
+            <RowTemplate Context="cargo">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">
+                            @cargo.Nome
+                        </h5>
+                        <p class="mb-0 text-muted small">@cargo.NumDocumentosNecessarios documentos necessários</p>
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                                      Click="@(args => NavigateToCargo(cargo.Id))"
+                                      Class="btn btn-primary" />
+                    </Buttons>
+                </EntityCard>
+            </RowTemplate>
+        </ListAllGrid>
+    </div>
+}
+
+
+@code {
+    private IEnumerable<CargoGetAllDto> _cargos;
+    private IEnumerable<TipoDocumentoDto> _tipos;
+    private MetaDataDto _metaData;
+    private int _curPage = 1, _pageSize = 10;
+
+    private async Task LoadCargos()
+    {
+        PagedListDto<CargoGetAllDto> list = await CargoService.GetCargosPaginatedAsync(
+            _curPage,
+            _pageSize
+        );
+
+        _cargos = list.Items;
+        _metaData = list.MetaData;
+
+        _tipos = await TipoDocumentoService.GetTipoDocumentosAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCargos();
+    }
+
+    private async Task OnGridLoadData(LoadDataArgs args)
+    {
+        _curPage = ((int)args.Skip / (int)args.Top) + 1;
+        _pageSize = args.Top ?? 10;
+
+        await LoadCargos();
+    }
+
+    private async Task NovoCargo()
+    {
+        var result = await DialogService.OpenAsync<CargoCreateDialog>(
+            "Criar Cargo",
+            new Dictionary<string, object> {
+                { "TiposDocumento", _tipos }
+                },
+            new DialogOptions
+                {
+                    Width = "50%",
+                    Height = "50%",
+                    CloseDialogOnOverlayClick = true
+                }
+        );
+
+        if (result is not null && result) await LoadCargos();
+    }
+
+    private void NavigateToCargo(Guid cargoId)
+    {
+        NavigationManager.NavigateTo($"/cargo/{cargoId}");
+    }
+}

@@ -1,0 +1,33 @@
+﻿@inject NavigationManager NavigationManager
+
+<div class="d-flex justify-content-between align-items-center mb-0">
+    <Header Title="@Title" />
+    <RadzenButton Text="@ButtonText"
+                  Icon="@ButtonIcon"
+                  Class="btn btn-success mb-5"
+                  Click="@(async () => await ButtonClick())" />
+</div>
+
+@code {
+
+    [Parameter] public string Title { get; set; } = "Titulo Default";
+    [Parameter] public string ButtonText { get; set; } = "Adicionar";
+    [Parameter] public string ButtonIcon { get; set; } = "add_circle";
+    [Parameter] public string Path { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; } // Custom action
+
+    private async Task ButtonClick()
+    {
+        if (OnClick.HasDelegate)
+        {
+            // Execute the custom action
+            await OnClick.InvokeAsync();
+        }
+        else
+        {
+            // Default: Navigate to Path
+            if (!string.IsNullOrWhiteSpace(Path))
+                NavigationManager.NavigateTo(Path);
+        }
+    }
+}

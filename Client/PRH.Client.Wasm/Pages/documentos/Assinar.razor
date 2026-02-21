@@ -1,0 +1,180 @@
+@page "/admissoes/documentos/assinar/{id}"
+
+@using PRH.Shared.DataTransferObjets
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Client.Wasm.Shared.Components
+@using QRCoder
+@using System.Text.RegularExpressions
+@using System.Net.Http.Headers
+
+
+@inject IDocumentoService DocumentoService
+@inject NavigationManager NavigationManager
+@inject Radzen.DialogService DialogService
+@inject HttpClient ApiClient
+@inject IDocumentoService DocumentoService
+
+<h1>Assinatura @NomeDocumento</h1>
+
+<div style="display: flex; flex-direction: column; width: 100%; margin-top: 1rem;">
+    @if (isLoading)
+    {
+        <LoadingEntity Entity=@($"documento {id}") />
+    }
+    else if (documento != null)
+    {
+
+        <div style="
+                                            border: 1px solid #ccc; 
+                                            border-radius: 4px; 
+                                            padding: 16px;
+                                            margin-bottom: 20px;
+                                            background-color: #fff;">
+            @if (!string.IsNullOrEmpty(caminhoFicheiro))
+            {
+                <iframe src="@caminhoFicheiro" style="width:100%; height:70vh; border:none;"></iframe>
+            }
+            else
+            {
+                <p>Carregando...</p>
+            }
+        </div>
+    }
+</div>
+
+<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="10px">
+    <RadzenButton Text="Assinatura Física" Icon="edit" Click="@MostrarQRCodeDialog" />
+    <RadzenButton Text="Assinatura com Cartão Cidadão" Icon="create" Click="@AssinaturaDigital" />
+</RadzenStack>
+
+@code {
+    [Parameter] public string id { get; set; } = string.Empty;
+    private bool isLoading = true;
+    private DocumentoDto? documento;
+    private string NomeDocumento = string.Empty;
+    private List<TipoDocumentoDto> _tipos = new List<TipoDocumentoDto>();
+    private string caminhoFicheiro = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            documento = await DocumentoService.GetDocumentoByIdAsync(Guid.Parse(id));
+            NomeDocumento = _tipos.FirstOrDefault(t => t.Id == documento.TipoDocumentoId)?.Nome ?? string.Empty;
+
+            var httpResponse = await ApiClient.GetAsync($"/api/admissoes/documentos/{id}/bytes");
+            if (httpResponse.IsSuccessStatusCode)
+            {
+                var bytes = await httpResponse.Content.ReadAsByteArrayAsync();
+                if (bytes != null && bytes.Length > 0)
+                {
+                    caminhoFicheiro = $"data:application/pdf;base64,{Convert.ToBase64String(bytes)}";
+                }
+                else
+                {
+                    await DialogService.OpenAsync("Aviso", ds =>
+                    (builder) => builder.AddContent(0, "O PDF retornado está vazio."));
+                }
+            }
+            else
+            {
+                var error = await httpResponse.Content.ReadAsStringAsync();
+                await DialogService.OpenAsync("Erro", ds =>
+                (builder) => builder.AddContent(0, $"Falha ao carregar: {httpResponse.StatusCode} - {error}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading documento: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+
+    }
+
+    private async Task MostrarQRCodeDialog()
+    {
+        if (!string.IsNullOrEmpty(caminhoFicheiro))
+        {
+            var qrCodeBase64 = GerarQRCodeBase64(documento.Id.ToString());
+
+            await DialogService.OpenAsync<QRCodeDialog>("QR Code do Documento",
+            new Dictionary<string, object>() { { "QRCodeImageBase64", qrCodeBase64 } });
+        }
+        else
+        {
+            await DialogService.Alert("O caminho do ficheiro não está disponível.", "Erro");
+        }
+    }
+
+    private string GerarQRCodeBase64(string texto)
+    {
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrCodeData = qrGenerator.CreateQrCode(texto, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(qrCodeData);
+        byte[] qrCodeBytes = qrCode.GetGraphic(20);
+        return $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
+    }
+
+
+    private async Task AssinaturaDigital()
+    {
+        try
+        {
+            var pdfBytes = await ApiClient.GetByteArrayAsync($"/api/admissoes/documentos/{documento!.Id}/bytes");
+
+            using var contentLocal = new ByteArrayContent(pdfBytes);
+            contentLocal.Headers.ContentType =
+            MediaTypeHeaderValue.Parse("application/pdf");
+
+            var localClient = new HttpClient
+            {
+                BaseAddress = new Uri("http://localhost:5004")
+            };
+
+            var localResp = await localClient.PostAsync("/assinar", contentLocal);
+            if (!localResp.IsSuccessStatusCode)
+            {
+                var aviso = await localResp.Content.ReadAsStringAsync();
+                await DialogService.Alert(aviso, "Aviso");
+                return;
+            }
+            localResp.EnsureSuccessStatusCode();
+
+            var signedBytes = await localResp.Content.ReadAsByteArrayAsync();
+
+            using var content = new MultipartFormDataContent();
+            content.Add(new ByteArrayContent(signedBytes), "file",
+            $"{documento.Id}_assinado.pdf");
+
+            var resp = await ApiClient.PostAsync(
+            "api/admissoes/documentos/upload", content);
+            resp.EnsureSuccessStatusCode();
+
+            var up = await resp.Content.ReadFromJsonAsync<FileUploadResponse>();
+            documento.Caminho = Regex.Match(up!.FileUrl, "/uploads.*$").Value;
+            documento.DocumentoAssinado = true;
+            await DocumentoService.UpdateDocumentoAsync(documento.Id, documento);
+
+            NavigationManager.NavigateTo($"/admissoes/documentos/{documento.CandidaturaId}");
+        }
+        catch (HttpRequestException ex)
+        {
+            await DialogService.Alert(
+            $"Erro ao comunicar: {ex.Message}", "Falha de Rede");
+        }
+        catch (Exception ex)
+        {
+            await DialogService.Alert(
+            $"Erro inesperado: {ex.Message}", "Erro");
+        }
+    }
+    private class FileUploadResponse
+    {
+        public string? FileUrl { get; set; }
+    }
+
+}

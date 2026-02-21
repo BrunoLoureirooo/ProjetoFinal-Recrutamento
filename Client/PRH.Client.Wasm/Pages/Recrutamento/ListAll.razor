@@ -1,0 +1,255 @@
+﻿@page "/recrutamentos"
+@using PRH.Client.Wasm.ViewModels
+@using PRH.Shared.DataTransferObjets.Recrutamento
+
+@inject IRecrutamentoService RecrutamentoService
+@inject IEmpresaService EmpresaService
+@inject RecrutamentoFilterStateService FilterState
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject AuthenticationStateProvider AuthStateProvider
+
+@inherits Notifications
+
+@attribute [Authorize]
+
+@if (_recrutamentos is null || _empresas is null)
+{
+    <LoadingEntity Entity="recrutamentos" />
+}
+else
+{
+    <HeaderWithButton Title="Lista de Recrutamentos" Path="/recrutamentos/novo" />
+    <div class="container mt-4">
+        <FilterCard>
+            @if (_isAdministrador)
+            {
+                <div class="col-12 col-md-6">
+                    <RadzenTextBox class="w-100"
+                    Placeholder="Nome..."
+                    @bind-Value="_nomeFiltro" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <RadzenDropDown class="w-100"
+                    Placeholder="Empresa..."
+                    @bind-Value="@_empresaFiltro"
+                    Data="@_empresas"
+                    TextProperty="Nome" />
+                </div>
+            }
+            else
+            {
+                <div class="col-12">
+                    <RadzenTextBox class="w-100"
+                    Placeholder="Nome..."
+                    @bind-Value="_nomeFiltro" />
+                </div>
+            }
+            <div class="col-12 col-md-6 col-lg-2">
+                <RadzenDropDown class="w-100"
+                Placeholder="Filtrar por candidaturas..."
+                @bind-Value="_candDisponiveisFiltro"
+                Data="@_candidaturasDisponiveisOptions"
+                TextProperty="Label"
+                ValueProperty="Value" />
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <RadzenDatePicker class="w-100"
+                @bind-Value="@_afterFiltro"
+                DateFormat="dd/MM/yyyy"
+                Placeholder="De..." />
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <RadzenDatePicker class="w-100"
+                @bind-Value="@_beforeFiltro"
+                DateFormat="dd/MM/yyyy"
+                Placeholder="Até..." />
+            </div>
+            <div class="col-lg-2"></div>
+            <div class="col-6 col-lg-2">
+                <RadzenButton Icon="search"
+                Text="Filtrar"
+                Click="@ApplyFilters"
+                Class="w-100 btn btn-primary" />
+            </div>
+            <div class="col-6 col-lg-2">
+                <RadzenButton Icon="mop"
+                Text="Limpar"
+                Click="@CleanFilters"
+                Class="w-100 btn btn-primary" />
+            </div>
+        </FilterCard>
+
+        <ListAllGrid
+        TItem="RecrutamentoGetAllDto"
+        Entities="@_recrutamentos"
+        MetaData="@_metaData"
+        OnGridLoadData="@OnGridLoadData"
+        PageSize="@_pageSize"
+        CurPage="@_curPage"
+        EntityName="recrutamentos">
+            <RowTemplate Context="recrutamento">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">
+                            @recrutamento.Nome
+                        </h5>
+                        <p class="mb-0 text-muted small">Total de @recrutamento.TotalVagas vagas @GetCargosString(recrutamento)</p>
+                        <p class="mb-0 text-muted small">Para a empresa @recrutamento.Empresa.Nome</p>
+                        <p class="mb-0 text-muted small">Iniciado em @recrutamento.Data.ToString("dd/MM/yyyy")</p>
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                        Click="@(args => NavigateToRecrutamento(recrutamento.Id))"
+                        Class="btn btn-primary" />
+                        <RadzenButton Icon="edit" Tooltip="Editar recrutamento"
+                        Click="@(args => ShowRecrutamentoEdit(recrutamento))"
+                        Class="btn btn-primary" />
+                    </Buttons>
+                </EntityCard>
+            </RowTemplate>
+        </ListAllGrid>
+    </div>
+}
+
+
+@code {
+    private IEnumerable<RecrutamentoGetAllDto> _recrutamentos;
+    private IEnumerable<EmpresaDto> _empresas;
+    private MetaDataDto _metaData;
+    private int _curPage = 1, _pageSize = 10;
+
+    private EmpresaDto _empresaFiltro;
+    private DateTime? _beforeFiltro, _afterFiltro;
+    private string? _nomeFiltro;
+    private bool? _candDisponiveisFiltro;
+    private List<DropdownOption<bool?>> _candidaturasDisponiveisOptions = new()
+    {
+        new DropdownOption<bool?>("Todos", null),
+        new DropdownOption<bool?>("Com candidaturas disponíveis", true),
+        new DropdownOption<bool?>("Sem candidaturas disponíveis", false)
+    };
+
+    private bool _isAdministrador;
+
+    private async Task LoadRecrutamentos()
+    {
+        // set to end of the day
+        if(_beforeFiltro is not null)
+            _beforeFiltro = _beforeFiltro.Value.Date.AddDays(1).AddSeconds(-1);
+
+        // set to start of the day (truncating hh:mm:ss)
+        if(_afterFiltro is not null)
+            _afterFiltro = _afterFiltro.Value.Date;
+
+        if(_beforeFiltro is not null && _afterFiltro is not null && _beforeFiltro.Value < _afterFiltro.Value)
+        {
+            Warning("Aviso dos filtros", "Data 'De...' tem de ser anterior à data 'Até...'");
+            return;
+        }
+
+        _recrutamentos = null;
+
+        PagedListDto<RecrutamentoGetAllDto> list = await RecrutamentoService.GetRecrutamentosPaginatedAsync(
+            _curPage,
+            _pageSize,
+            _nomeFiltro,
+            _empresaFiltro,
+            _beforeFiltro,
+            _afterFiltro,
+            _candDisponiveisFiltro
+        );
+
+        _recrutamentos = list.Items;
+        _metaData = list.MetaData;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        _isAdministrador = authState.User.IsInRole("Administrador");
+
+        _nomeFiltro = FilterState.Nome;
+        _empresaFiltro = FilterState.Empresa;
+        _afterFiltro = FilterState.After;
+        _beforeFiltro = FilterState.Before;
+        _candDisponiveisFiltro = FilterState.CandDisponiveis;
+
+        if (_isAdministrador)
+            _empresas = await EmpresaService.GetEmpresasAsync();
+        else
+            _empresas = new List<EmpresaDto>();
+
+        await LoadRecrutamentos();
+    }
+
+    private async Task ShowRecrutamentoEdit(RecrutamentoGetAllDto recrutamento)
+    {
+        var result = await DialogService.OpenAsync<RecrutamentoEditDialog>(
+            "Editar Recrutamento",
+            new Dictionary<string, object> {
+                { "Empresas", _empresas },
+                { "Recrutamento", recrutamento},
+                { "IsAdministrador", _isAdministrador}
+            },
+            new DialogOptions
+                {
+                    Width = "50%",
+                    Height = "35%",
+                    CloseDialogOnOverlayClick = true
+                }
+        );
+
+        if (result is not null && result) await LoadRecrutamentos();
+    }
+
+    private void NavigateToRecrutamento(Guid recrutamentoId)
+    {
+        NavigationManager.NavigateTo($"/recrutamento/{recrutamentoId}");
+    }
+
+    private void SaveFilters()
+    {
+        FilterState.Nome = _nomeFiltro;
+        FilterState.Empresa = _empresaFiltro;
+        FilterState.After = _afterFiltro;
+        FilterState.Before = _beforeFiltro;
+        FilterState.CandDisponiveis = _candDisponiveisFiltro;
+    }
+
+    private async Task ApplyFilters()
+    {
+        SaveFilters();
+        await LoadRecrutamentos();
+    }
+
+    private async Task CleanFilters()
+    {
+        _nomeFiltro = null;
+        _empresaFiltro = null;
+        _beforeFiltro = null;
+        _afterFiltro = null;
+        _candDisponiveisFiltro = null;
+        SaveFilters();
+
+        _recrutamentos = null;
+        await LoadRecrutamentos();
+    }
+
+    private async Task OnGridLoadData(LoadDataArgs args)
+    {
+        _curPage = ((int)args.Skip / (int)args.Top) + 1;
+        _pageSize = args.Top ?? 10;
+
+        await LoadRecrutamentos();
+    }
+
+    private string GetCargosString(RecrutamentoGetAllDto recrutamento)
+    {
+        if (!recrutamento.Cargos.Any()) return "";
+        else if (recrutamento.Cargos.Count() == 1) return "para o cargo " + recrutamento.Cargos[0];
+        else if (recrutamento.Cargos.Count() == 2) return "para os cargos " + recrutamento.Cargos[0] + " e " + recrutamento.Cargos[1];
+        else return "para os cargos " + recrutamento.Cargos[0] + ", " + recrutamento.Cargos[1] + " ...";
+    }
+}

@@ -1,0 +1,143 @@
+@page "/templates"
+@using Microsoft.AspNetCore.Authorization
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Client.Wasm.Shared.Components
+@using PRH.Shared.DataTransferObjets
+@inject ITemplateService TemplateService
+@inject IEmpresaService EmpresaService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+
+@attribute [Authorize]
+
+@if (_templates is null || _empresas is null)
+{
+    <LoadingEntity Entity="templates" />
+}
+else
+{
+    <HeaderWithButton Title="Templates de Documentos" Path="/templates/adicionar" />
+    <div class="container mt-4">
+        <FilterCard>
+            <div class="col-12 col-lg-6">
+                <RadzenTextBox class="w-100" Placeholder="Pesquisar por Tipo de Documento..."
+                    @bind-Value="_searchTemplate" />
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <RadzenTextBox class="w-100" Placeholder="Pesquisar por Empresa..." @bind-Value="_searchEmpresa" />
+            </div>
+
+            <div class="col-lg-8"></div>
+            <div class="col-6 col-lg-2">
+                <RadzenButton Icon="search" Text="Filtrar" Click="@PesquisarTemplate" Class="btn btn-primary w-100" />
+            </div>
+            <div class="col-6 col-lg-2">
+                <RadzenButton Icon="mop" Text="Limpar" Click="@LimparFiltro" Class="btn btn-primary w-100" />
+            </div>
+        </FilterCard>
+
+        <ListAllGrid TItem="TemplateDto" Entities="@_templates" EntityName="templates">
+            <RowTemplate Context="template">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">@template.TipoDocumentoNome</h5>
+                        <p class="mb-0 text-muted small">
+                            Empresa: <strong>@_empresas.FirstOrDefault(e => e.Id == template.EmpresaId)?.Nome</strong>
+                        </p>
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="edit" Tooltip="Editar" Click="@(args => EditarTemplate(template.Id))"
+                            Class="btn btn-primary" />
+                        <RadzenButton Icon="delete" Tooltip="Excluir" Class="btn btn-primary"
+                            Click="@(args => RemoverTemplate(template.Id))" />
+                    </Buttons>
+                </EntityCard>
+            </RowTemplate>
+        </ListAllGrid>
+    </div>
+}
+
+@code {
+    private IEnumerable<TemplateDto> _templates;
+    private IEnumerable<TemplateDto> _allTemplates;
+    private List<EmpresaDto> _empresas;
+    private string _searchTemplate = "";
+    private string _searchEmpresa = "";
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarEmpresas();
+        await CarregarTemplates();
+    }
+
+    private async Task CarregarEmpresas()
+    {
+        _empresas = (await EmpresaService.GetEmpresasAsync()).ToList();
+    }
+
+    private async Task CarregarTemplates()
+    {
+        try
+        {
+            _allTemplates = await TemplateService.GetTemplatesAsync();
+            _templates = _allTemplates;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            _templates = new List<TemplateDto>();
+            _allTemplates = _templates;
+        }
+    }
+
+    private void PesquisarTemplate()
+    {
+        var filtered = _allTemplates;
+
+        if (!string.IsNullOrWhiteSpace(_searchTemplate))
+        {
+            filtered = filtered.Where(t =>
+            t.TipoDocumentoNome?.Contains(_searchTemplate, StringComparison.OrdinalIgnoreCase) == true);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_searchEmpresa))
+        {
+            filtered = filtered.Where(t =>
+            t.EmpresaNome?.Contains(_searchEmpresa, StringComparison.OrdinalIgnoreCase) == true);
+        }
+
+        _templates = filtered;
+    }
+
+    private void LimparFiltro()
+    {
+        _searchTemplate = "";
+        _searchEmpresa = "";
+        _templates = _allTemplates;
+    }
+
+    private void EditarTemplate(Guid id)
+    {
+        NavigationManager.NavigateTo($"/templates/{id}");
+    }
+
+    private async Task RemoverTemplate(Guid id)
+    {
+        var confirmed = await DialogService.Confirm("Tem certeza que deseja excluir este Template?", "Confirmar");
+        if (confirmed == true)
+        {
+            try
+            {
+                await TemplateService.DeleteTemplateAsync(id);
+                _allTemplates = _allTemplates.Where(t => t.Id != id);
+                PesquisarTemplate();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+            }
+        }
+    }
+}

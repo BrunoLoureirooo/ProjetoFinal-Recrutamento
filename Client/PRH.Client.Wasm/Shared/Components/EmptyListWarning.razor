@@ -1,0 +1,8 @@
+﻿<p class="w-100 h-100 text-center">
+    Não existem @Entity @(string.IsNullOrEmpty(Parent) ? "" : $"para {Parent}")...
+</p>
+
+@code {
+    [Parameter] public string Entity { get; set; }
+    [Parameter] public string Parent { get; set; } = "";
+}

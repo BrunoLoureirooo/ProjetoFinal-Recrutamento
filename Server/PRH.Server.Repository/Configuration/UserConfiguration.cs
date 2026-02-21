@@ -20,12 +20,31 @@ public class UserConfiguration : IEntityTypeConfiguration<ApplicationUser>
     internal static readonly Guid LUIS_NEVES = Guid.Parse("4b93b0ab-aed4-4eb1-a40b-900229359841");
     internal static readonly Guid OLGA_CUNHA = Guid.Parse("620d12b3-1d00-4d7f-a262-795f004f83fe");
     internal static readonly Guid ADMIN = Guid.Parse("fb874eba-9c48-4340-a690-bebb2195d379");
+    internal static readonly Guid GESTOR_TRIGENIUS = Guid.Parse("2e0f5a9b-9c94-4e3e-b8b0-8fd60b6ec7ce");
 
     internal static readonly string DEV_PASSWORD = "Trigenius2025#";
 
     public void Configure(EntityTypeBuilder<ApplicationUser> builder)
     {
         PasswordHasher<ApplicationUser> passwordHasher = new PasswordHasher<ApplicationUser>();
+
+        ApplicationUser gestorTrigenius = new ApplicationUser()
+        {
+            Id = GESTOR_TRIGENIUS.ToString(),
+
+            Email = "gestor@trigenius.pt",
+            NormalizedEmail = "GESTOR@TRIGENIUS.PT",
+
+            Nome = "Gestor Trigénius",
+
+            EmailConfirmed = true,
+
+            ConcurrencyStamp = Guid.Parse("6db9e8e1-5e87-4c3b-9e09-6b85ffb81e9f").ToString(),
+            SecurityStamp = Guid.Parse("3a4f7d5e-1c2a-4c73-8136-04e02b71a627").ToString()
+        };
+
+        gestorTrigenius.PasswordHash = passwordHasher.HashPassword(gestorTrigenius, DEV_PASSWORD);
+        builder.HasData(gestorTrigenius);
 
         ApplicationUser anaPinto = new ApplicationUser()
         {

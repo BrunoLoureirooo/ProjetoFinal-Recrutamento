@@ -1,0 +1,13 @@
+﻿<div class="@_classString">
+    @ChildContent
+</div>
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+    private string _classString { get; set; } = "card p-4 mb-4 shadow-sm rounded-4";
+
+    protected override void OnInitialized()
+    {
+        _classString += Class;
+    }
+}

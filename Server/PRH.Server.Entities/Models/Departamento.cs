@@ -8,8 +8,8 @@ public class Departamento : BaseModel
     public string Nome { get; set; }
     
     public Guid EmpresaId { get; set; }
-    public Empresa Empresa { get; set; }
+    public virtual Empresa Empresa { get; set; }
 
-    public Collection<Equipa> Equipas { get; set; }
-    public Collection<Funcionario> Funcionarios { get; set; }
+    public virtual Collection<Equipa> Equipas { get; set; }
+    public virtual Collection<Funcionario> Funcionarios { get; set; }
 }

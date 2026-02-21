@@ -1,0 +1,110 @@
+﻿@namespace PRH.Client.Wasm.Shared.Components.Dialogs
+
+@using PRH.Shared.DataTransferObjets.Funcionario
+@using System.Collections.ObjectModel
+
+@inject ICargoService CargoService
+@inject DialogService DialogService
+
+@inherits PRH.Client.Wasm.Pages.Notifications
+
+<div class="container-fluid px-3">
+    <div class="row gy-4">
+        <div class="col-12">
+            <RadzenTextBox @bind-Value="_nome" class="w-100" Placeholder="Nome..." />
+        </div>
+        <div class="col-12"
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <RadzenDropDown class="w-100"
+                Data="@TiposDocumento"
+                @bind-Value="_tipo"
+                TextProperty="Nome"
+                Placeholder="Tipo..." />
+                <RadzenButton Icon="add" Class="btn btn-success" Click="@AddTipo" />
+            </div>
+        </div>
+        <div class="col-12">
+            <ListAllGrid TItem="TipoDocumentoDto"
+            Entities="@_tiposCargo"
+            PageSize="5"
+            EntityName="documentos necessários">
+                <RowTemplate Context="tipo">
+                    <EntityCard>
+                        <Content>
+                            <h5 class="mb-1 text-dark">
+                                @tipo.Nome
+                            </h5>
+                        </Content>
+                        <Buttons>
+                            <RadzenButton Icon="delete" Tooltip="Remover formulario"
+                            Click="@(args => RemoveTipo(tipo))"
+                            Class="btn btn-primary" />
+                        </Buttons>
+                    </EntityCard>
+                </RowTemplate>
+            </ListAllGrid>
+        </div>
+        <div class="col-6">
+            <RadzenButton Icon="save"
+            Text="Salvar"
+            Class="w-100 btn btn-primary"
+            Click="@CreateCargo" />
+        </div>
+        <div class="col-6">
+            <RadzenButton Text="Cancelar"
+            Class="w-100 btn btn-outline-secondary"
+            Click="@Cancel" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TipoDocumentoDto> TiposDocumento { get; set; }
+    [Parameter] public bool IsDialog { get; set; } = false;
+
+    private string _nome;
+    private TipoDocumentoDto _tipo;
+    private IEnumerable<TipoDocumentoDto> _tiposCargo = new List<TipoDocumentoDto>();
+
+    private async Task CreateCargo()
+    {
+        CargoCreateDto c = new CargoCreateDto();
+
+        if (string.IsNullOrEmpty(_nome))
+        {
+            Notify(NotificationSeverity.Warning, "Erro de criação de cargo", "Cargo precisa de um nome");
+            return;
+        }
+
+        c.Nome = _nome;
+
+        c.DocumentosNecessarios = new Collection<Guid>();
+        foreach (var t in _tiposCargo)
+            c.DocumentosNecessarios.Add(t.Id);
+
+        await CargoService.CreateCargoAsync(c);
+        DialogService.Close(true);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+
+    private void AddTipo()
+    {
+        if (_tipo is null)
+        {
+            Notify(NotificationSeverity.Warning, "Erro de criação de vaga", "Não selecionou o formulário");
+            return;
+        }
+
+        _tiposCargo = _tiposCargo.Append(_tipo).ToList();
+    }
+
+    private void RemoveTipo(TipoDocumentoDto tipo)
+    {
+        if (tipo is not null)
+            _tiposCargo = _tiposCargo.Where(x => x != tipo);
+    }
+}

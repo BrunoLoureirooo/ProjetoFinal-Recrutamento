@@ -1,0 +1,151 @@
+@page "/tipoDocumentos"
+@using Microsoft.AspNetCore.Authorization
+@inject Radzen.DialogService DialogService
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Client.Wasm.Shared.Components
+@using PRH.Shared.DataTransferObjets
+
+@inject ITipoDocumentoService TipoDocumentoService
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize]
+
+@if (_tiposDocumentos is null)
+{
+    <LoadingEntity Entity="tipos de documento" />
+}
+else
+{
+    <HeaderWithButton Title="Tipos de Documentos" Path="/tipoDocumentos/adicionar" />
+    <div class="container mt-4">
+        <FilterCard>
+            <div class="col-12 col-lg-8">
+                <RadzenTextBox class="w-100"
+                               Placeholder="Pesquisar por Tipo de Documento..."
+                               @bind-Value="_searchTerm" />
+            </div>
+            <div class="col-6 col-lg-2">
+                <RadzenButton Icon="search"
+                              Text="Filtrar"
+                              Click="@AplicarFiltro"
+                              Class="w-100 btn btn-primary" />
+            </div>
+            <div class="col-6 col-lg-2">
+                <RadzenButton Icon="mop"
+                              Text="Limpar"
+                              Click="@LimparFiltro"
+                              Class="w-100 btn btn-primary" />
+            </div>
+        </FilterCard>
+
+        <ListAllGrid
+            TItem="TipoDocumentoDto"
+            Entities="@_tiposDocumentos"
+            MetaData="@_metaData"
+            OnGridLoadData="@OnGridLoadData"
+            EntityName="tipos de documento">
+            <RowTemplate Context="tipo">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">@tipo.Nome</h5>
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="edit" Tooltip="Editar tipo"
+                                      Click="@(args => EditarTipo(tipo.Id))"
+                                      Class="btn btn-primary" />
+                        <RadzenButton Icon="delete" Tooltip="Remover tipo"
+                                      Click="@(args => RemoverTipo(tipo.Id))"
+                                      Class="btn btn-primary" />
+                    </Buttons>
+                </EntityCard>
+            </RowTemplate>
+        </ListAllGrid>
+    </div>
+}
+
+@code {
+    private IEnumerable<TipoDocumentoDto> _tiposDocumentos;
+    private IEnumerable<TipoDocumentoDto> _allTipos;
+    private MetaDataDto _metaData;
+    private string _searchTerm = string.Empty;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarTipos();
+    }
+
+    private async Task CarregarTipos()
+    {
+        try
+        {
+            _isLoading = true;
+            var tipos = await TipoDocumentoService.GetTipoDocumentosAsync();
+            _allTipos = tipos;
+            _tiposDocumentos = tipos;
+        
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            _tiposDocumentos = new List<TipoDocumentoDto>();
+            _metaData = new MetaDataDto();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task AplicarFiltro()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _tiposDocumentos = _allTipos;
+        }
+        else
+        {
+            _tiposDocumentos = _allTipos
+                .Where(t => t.Nome.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LimparFiltro()
+    {
+        _searchTerm = string.Empty;
+        await AplicarFiltro();
+    }
+
+    private async Task OnGridLoadData(LoadDataArgs args)
+    {
+   
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void EditarTipo(Guid id)
+    {
+        NavigationManager.NavigateTo($"/tipoDocumentos/{id}");
+    }
+
+    private async Task RemoverTipo(Guid id)
+    {
+        var confirmed = await DialogService.Confirm("Tem certeza que deseja excluir este tipo?", "Confirmar exclusão");
+        if (confirmed == true)
+        {
+            try
+            {
+                await TipoDocumentoService.DeleteTipoDocumentoAsync(id);
+                _allTipos = _allTipos.Where(t => t.Id != id);
+                await AplicarFiltro();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+            }
+        }
+    }
+}

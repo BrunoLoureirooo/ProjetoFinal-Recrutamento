@@ -1,0 +1,116 @@
+﻿@namespace PRH.Client.Wasm.Shared.Components.Dialogs
+
+@using PRH.Shared.DataTransferObjets.Funcionario
+
+@inject IEntrevistaService EntrevistaService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+
+@inherits PRH.Client.Wasm.Pages.Notifications
+
+<div class="container-fluid px-3">
+    <div class="row gy-4">
+        <div class="col-12 col-lg-6">
+            <label class="form-label fw-semibold">Data</label>
+            <div class="d-flex gap-2 align-items-center">
+                <RadzenDatePicker @bind-Value="_data"
+                DateFormat="dd/MM/yyyy"
+                Name="Data"
+                Style="width: 100%;" />
+            </div>
+            <label class="form-label fw-semibold mt-2">Hora</label>
+            <div class="d-flex gap-2 align-items-center">
+                <RadzenNumeric @bind-Value="_hora"
+                Min="8" Max="20"
+                Name="Hora"
+                ShowUpDown="true"
+                Placeholder="HH"
+                Style="width: 80px;" />
+                <span class="fs-5">h :</span>
+                <RadzenNumeric @bind-Value="_minuto"
+                Min="0" Max="59"
+                Name="Minuto"
+                ShowUpDown="true"
+                Placeholder="MM"
+                Style="width: 80px;" />
+                <span class="fs-5">s</span>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <label class="form-label fw-semibold">Entrevistador</label>
+            <RadzenDropDown class="w-100"
+            Placeholder="Selecionar entrevistador..."
+            @bind-Value="@_entrevistador"
+            Data="@Entrevistadores"
+            TextProperty="@nameof(FuncionarioGetAllDto.Nome)"
+            Name="Entrevistador" />
+        </div>
+
+        <div class="col-6">
+            <RadzenButton Icon="save"
+            Text="Salvar"
+            Class="w-100 btn btn-primary"
+            Click="@CreateEntrevista" />
+        </div>
+        <div class="col-6">
+            <RadzenButton Text="Cancelar"
+            Class="w-100 btn btn-outline-secondary"
+            Click="@Cancel" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<FuncionarioGetAllDto> Entrevistadores { get; set; }
+    [Parameter] public Guid CandidaturaId { get; set; }
+    [Parameter] public bool IsDialog { get; set; } = false;
+
+    private FuncionarioGetAllDto _entrevistador;
+    private DateTime _data;
+    private int _hora = 8, _minuto = 0;
+
+    private async Task CreateEntrevista()
+    {
+        DateTime dataSend = new DateTime(_data.Year, _data.Month, _data.Day, _hora, _minuto, 0);
+        if(dataSend < DateTime.Now)
+        {
+            Warning("Aviso de marcação de entrevista", "Entrevista não pode ser marcada no passado...");
+            return;
+        }
+
+        if (_entrevistador is null)
+        {
+            Warning("Aviso de marcação de entrevista", "Por favor selecione um entrevistador");
+            return;
+        }
+
+        EntrevistaCreateDto entrevista = new()
+            {
+                CandidaturaId = CandidaturaId,
+                EntrevistadorId = _entrevistador.Id,
+                DataHora = dataSend
+            };
+
+        var result = await EntrevistaService.CreateEntrevistaAsync(entrevista);
+        if (!result.IsSuccessStatusCode)
+        {
+            Failure("Erro de marcação de entrevista", "Algo correu mal na marcação da entrevista...");
+            NavigationManager.NavigateTo("entrevistas");
+        }
+        else
+        {
+            Success("Nova entrevista criada", "A nova entrevista para foi criada com sucesso!");
+            EntrevistaGetOneDto newEntrevista = await result.Content.ReadFromJsonAsync<EntrevistaGetOneDto>();
+            NavigationManager.NavigateTo($"entrevista/{newEntrevista.Id}");
+        }
+         
+
+        DialogService.Close(true);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(Guid.Empty);
+    }
+}

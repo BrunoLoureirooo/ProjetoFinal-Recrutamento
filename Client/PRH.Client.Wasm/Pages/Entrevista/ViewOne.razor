@@ -1,0 +1,227 @@
+﻿@page "/entrevista/{Id}"
+
+@using PRH.Shared.DataTransferObjets.Candidatura
+
+@inject IEntrevistaService EntrevistaService
+@inject ILookupService LookupService
+@inject IFuncionarioService FuncionarioService
+@inject ICandidaturaService CandidaturaService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+@attribute [Authorize]
+
+@if (_entrevista is null)
+{
+    <LoadingEntity Entity=@($"entrevista {Id}") />
+}
+else
+{
+    <HeaderWithSubtext Title=@($"Entrevista a {_entrevista.Candidatura.NomeCandidato}")
+    Subtext=@($"{_entrevista.Id}") />
+    <div class="container mt-4">
+        <div class="d-flex gap-2 justify-content-end mb-2">
+            <RadzenButton Text="Ver Candidatura"
+                          Icon="visibility"
+                            Class="btn btn-success"
+                            Tooltip="Ver Candidatura"
+                            Click="@(() => NavigateToCandidatura(_entrevista.Candidatura.Id))" />
+            @if (_entrevista.Candidatura.Estado == "A Decorrer")
+            {
+                @if (!editing)
+                {
+                    @if (_entrevista.Resultado.Descricao == "Entrevista Agendada")
+                    {
+                        <RadzenButton Icon="calendar_month" Text="Iniciar Entrevista" Class="btn btn-primary me-2" Click="@ToggleEdit" />
+                    }
+                }
+                else
+                {
+                    <RadzenButton Icon="calendar_month" Text="Terminar Entrevista" Class="btn btn-primary me-2" Click="@Save" />
+                }
+            }
+        </div>
+
+        <Card>
+            <div class="flex-column mb-3">
+                <div class="d-flex flex-row justify-content-between mb-3">
+                    <h2 class="me-3">Nome do candidato: @_entrevista.Candidatura.NomeCandidato</h2>
+                    <p class="text-end">Estado: <strong>@_entrevista.Resultado.Descricao</strong></p>
+                </div>
+                <div class="row my-3 align-items-start">
+                    <div class="col-md-9">
+                        <p>NIF do candidato: @_entrevista.Candidatura.NIFcandidato</p>
+                        <p>Contacto do candidato: @_entrevista.Candidatura.ContactoCandidato</p>
+                        <p>E-mail do candidato: @_entrevista.Candidatura.EmailCandidato</p>
+                    </div>
+                    
+
+                </div>
+
+                
+            </div>
+            <div class="flex-row mb-3">
+                <div class="d-flex flex-row justify-content-between mb-3">
+                    <h2 class="me-3">Nome do Entrevistador: @_entrevista.Entrevistador.Nome</h2>
+                    <p>E-mail do entrevistador: @_entrevista.Entrevistador.Email</p>
+                </div>
+                <div class="col-12">
+                    <h5 class="mb-0">Notas da Entrevista: </h5>
+                    <RadzenTextArea @bind-Value="@_entrevista.Notas" Rows="4" class="w-100" Disabled="@(!editing)"/>
+                </div>
+            </div>
+            @if (editing)
+            {
+                <div class="flex-row my-3">
+                    <div class="d-flex flex-row justify-content-between mb-3">
+                        <h2 class="me-3">Resultado da Entrevista</h2>
+                    </div>
+                    <div class="col-12">
+                        <div class="flex-row gap-5">
+                            <RadzenLabel Text="Resultado: " Component="DropDownResultados" />
+                            <RadzenDropDown @bind-Value=@novoResultado
+                                            Data=@resultadosNomes
+                                            Change=@(args => OnResultadoChanged(args?.ToString()))
+                                            Style="width: 100%; max-width: 400px;"
+                                            Name="DropDownResultados" />
+                        </div>
+                    </div>
+                </div>
+            }
+
+        </Card>
+    </div>
+}
+
+
+@code {
+    [Parameter] public string Id { get; set; }
+
+    private EntrevistaGetOneDto _entrevista;
+
+    private IEnumerable<LookupDto> _resultados;
+    private List<string> resultadosNomes = new();
+    private string novoResultado = "";
+    private bool editing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _entrevista = await EntrevistaService.GetEntrevistaByIdAsync(Guid.Parse(Id));
+        _resultados = await LookupService.GetResultadosAsync();
+        resultadosNomes = _resultados?.Select(r => r.Descricao).ToList() ?? new();
+        novoResultado = _entrevista.Resultado.Descricao;
+    }
+
+    private void NavigateToCandidatura(Guid Id)
+    {
+        NavigationManager.NavigateTo($"/candidatura/{Id}");
+    }
+
+    private Task OnResultadoChanged(string newValue)
+    {
+        novoResultado = newValue;
+        return Task.CompletedTask;
+    }
+
+    private void ToggleEdit()
+    {
+        editing = !editing;
+    }
+
+    private async void Save()
+{
+    if (novoResultado == "Entrevista Agendada")
+    {
+        Warning("Erro ao concluir a atualização de entrevista", "Não pode terminar entrevista com estado 'Entrevista Agendada'");
+        return;
+    }
+    try
+    {
+        if (_entrevista?.Id == null)
+        {
+            Warning("Atenção", "Entrevista não pode ser nula");
+            return;
+        }
+
+        var ResultadoSelecionado = _resultados.FirstOrDefault(r => r.Descricao == novoResultado);
+
+        if (ResultadoSelecionado == null )
+        {
+            Warning("Atenção", "Resultado inválido");
+            return;
+        }
+        if (ResultadoSelecionado.Descricao == "Encaminhado para proxima fase")
+        {
+            var confirmed = await MarcarEntrevista(_entrevista.Candidatura.Id);
+            if (!confirmed)
+            {
+                Warning("Entrevista não marcada", "Operação cancelada pelo utilizador");
+                return;
+            }
+        }
+
+        var dto = new EntrevistaUpdateDto
+        {
+            Notas = _entrevista.Notas,
+            ResultadoId = ResultadoSelecionado.Id
+        };
+
+        await EntrevistaService.UpdateEntrevistaAsync(_entrevista.Id, dto);
+
+        Success("Sucesso", "Alterações gravadas com sucesso");
+
+        // Atualiza a entidade local com a resposta atualizada da API
+        _entrevista = await EntrevistaService.GetEntrevistaByIdAsync(_entrevista.Id);
+
+        // Atualiza também o dropdown para refletir a nova descrição do resultado
+        novoResultado = _entrevista.Resultado.Descricao;
+
+        ToggleEdit();
+        StateHasChanged();
+    }
+    catch (Exception ex)
+    {
+        Failure("Erro inesperado", $"Não foi possível salvar: {ex.Message}");
+    }
+}
+
+
+    private async Task<bool> MarcarEntrevista(Guid candidaturaId)
+    {
+        var candidatura = await CandidaturaService.GetCandidaturaByIdAsync(candidaturaId);
+        var entrevistadores = await FuncionarioService.GetFuncionariosByEmpresaAsync(candidatura.Empresa.Id);
+
+        var result = await DialogService.OpenAsync<EntrevistaCreateDialog>(
+            "Marcar Entrevista",
+            new Dictionary<string, object> {
+            { "Entrevistadores", entrevistadores },
+            { "CandidaturaId", candidatura.Id }
+                },
+            new DialogOptions
+                {
+                    Width = "50%",
+                    Height = "28%",
+                    CloseDialogOnOverlayClick = true
+                });
+
+        // If result is null, user canceled or closed the dialog
+        return result;
+    }
+
+
+    private void Success(string summary, string detail) => Notify(NotificationSeverity.Success, summary, detail);
+    private void Failure(string summary, string detail) => Notify(NotificationSeverity.Error, summary, detail);
+    private void Warning(string summary, string detail) => Notify(NotificationSeverity.Warning, summary, detail);
+
+    private void Notify(NotificationSeverity severity, string summary, string detail)
+    {
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = severity,
+                Summary = summary,
+                Detail = detail,
+                Duration = 4000
+            });
+    }
+}

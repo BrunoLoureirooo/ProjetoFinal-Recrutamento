@@ -1,0 +1,27 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login"); // or your login page
+            return;
+        }
+
+        if (user.IsInRole("Administrador"))
+        {
+            Navigation.NavigateTo("/recrutamentos"); // admin landing page
+        }
+        else
+        {
+            Navigation.NavigateTo("/dashboard"); // regular user landing page
+        }
+    }
+}

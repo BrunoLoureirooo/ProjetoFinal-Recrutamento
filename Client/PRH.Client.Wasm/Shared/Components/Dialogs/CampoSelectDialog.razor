@@ -1,0 +1,134 @@
+﻿@namespace PRH.Client.Wasm.Shared.Components.Dialogs
+
+@inject DialogService DialogService
+@inject ILookupService LookupService
+@inject ICampoService CampoService
+
+<div class="gap-0.5rem align-items-center">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div></div>
+        <div class="d-flex align-items-center">
+            <label class="me-2">Selecionar</label>
+            <RadzenSwitch @bind-Value="_isCreatingNewField" />
+            <label class="ms-2">Criar</label>
+        </div>
+    </div>
+
+    @if (!_isCreatingNewField)
+    {
+        <div class="mb-3">
+            <label for="campos" class="form-label">Campos</label>
+            <div class="d-flex align-items-center gap-2">
+                <RadzenDropDown class="form-control w-50"
+                                Placeholder="Selecione um campo..."
+                                @bind-Value="_selectedCampoId"
+                                Data="@Fields"
+                                TextProperty="Nome"
+                                ValueProperty="Id" />
+                <RadzenButton Icon="add" Class="btn btn-success" Click="@AddCampo" />
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3 gap-1">
+            <RadzenDropDown @bind-Value="_newCampoTipo"
+                            Data="FieldTypes"
+                            TextProperty="Descricao"
+                            ValueProperty="Id"
+                            Placeholder="Tipo" />
+            <RadzenTextBox @bind-Value="_newCampoNome"
+                           Style="width: 65%"
+                           Placeholder="Nome do Campo" />
+            <RadzenButton Icon="add" Class="btn btn-success" Click="@CreateCampo" />
+        </div>
+    }
+
+    @foreach (var campo in _selectedCampos)
+    {
+        <RadzenCard Class="mb-4 shadow-sm d-flex justify-content-between align-items-center"
+                    Style="cursor: pointer;"
+                    @onclick="@(() => RemoveCampo(campo))">
+            <h3>Campo @campo.Nome</h3>
+            <p>Tipo @campo.TipoCampo?.Descricao</p>
+        </RadzenCard>
+    }
+
+    @foreach (var campo in _camposCriados)
+    {
+        <RadzenCard Class="mb-4 shadow-sm d-flex justify-content-between align-items-center"
+                    Style="cursor: pointer;"
+                    @onclick="@(() => RemoveNewCampo(campo))">
+            <h3>Campo @campo.Nome</h3>
+            <p>Tipo @campo.TipoCampo?.Descricao</p>
+        </RadzenCard>
+    }
+
+    <div class="mt-2">
+        <RadzenButton Text="Confirmar"
+                      Click="@ConfirmSelection"
+                      Disabled="@(!_selectedCampos.Any())" />
+        <RadzenButton Text="Cancelar"
+                      Click="@Cancel"
+                      ButtonStyle="ButtonStyle.Secondary" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<CampoGetDto> Fields { get; set; } = new();
+    [Parameter] public List<LookupDto> FieldTypes { get; set; } = new();
+
+    private Guid _selectedCampoId;
+    private bool _isCreatingNewField = false;
+    private Guid _newCampoTipo;
+    private string _newCampoNome = "";
+
+    private List<CampoGetDto> _selectedCampos = new();
+    private List<(string Nome, LookupDto TipoCampo)> _camposCriados = new();
+
+    async Task ConfirmSelection()
+    {
+        DialogService.Close(_selectedCampos);
+    }
+
+    async Task CreateCampo()
+    {
+        if (string.IsNullOrWhiteSpace(_newCampoNome) || _newCampoTipo == Guid.Empty)
+            return;
+
+        var tipoCampo = await LookupService.GetTipoCampoByIdAsync(_newCampoTipo);
+
+        var novoCampo = new CampoCreateDto
+            {
+                Nome = _newCampoNome,
+                TipoCampo = tipoCampo
+            };
+
+        var created = await CampoService.CreateCampoAsync(novoCampo);
+        _selectedCampos.Add(created);
+
+        _newCampoNome = string.Empty;
+        _newCampoTipo = Guid.Empty;
+    }
+
+    void AddCampo()
+    {
+        var campo = Fields.FirstOrDefault(c => c.Id == _selectedCampoId);
+        if (campo != null && !_selectedCampos.Any(c => c.Id == campo.Id))
+        {
+            _selectedCampos.Add(campo);
+        }
+    }
+
+    void RemoveCampo(CampoGetDto campo)
+    {
+        _selectedCampos.RemoveAll(c => c.Id == campo.Id);
+    }
+
+    void RemoveNewCampo((string Nome, LookupDto TipoCampo) campo)
+    {
+        _camposCriados.RemoveAll(c => c.Nome == campo.Nome && c.TipoCampo.Id == campo.TipoCampo.Id);
+    }
+
+    void Cancel() => DialogService.Close();
+}

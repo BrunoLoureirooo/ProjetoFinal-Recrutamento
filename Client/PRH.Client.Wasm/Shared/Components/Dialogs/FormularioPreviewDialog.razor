@@ -1,0 +1,80 @@
+﻿@namespace PRH.Client.Wasm.Shared.Components.Dialogs
+
+@if (Campos?.Any() == true)
+{
+    <RadzenCard class="my-5">
+        <RadzenRow Gap="2rem" RowGap="2rem" class="rz-m-0 rz-m-md-12">
+            @foreach (var campo in Campos)
+            {
+                if (campo?.Campo != null && campo.Ativo)
+                {
+                    <RadzenColumn Size="12" SizeMD="4">
+                        @if (campo.Campo.TipoCampo?.Descricao == "string")
+                        {
+                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">
+                                <b>@campo.Campo.Nome</b>
+                            </RadzenText>
+                            <RadzenTextBox Disabled="true" Style="width: 100%;" aria-label="Disabled TextBox" />
+                        }
+                        @if (campo.Campo.TipoCampo?.Descricao == "data")
+                        {
+                            <RadzenStack Orientation="Orientation.Vertical" JustifyContent="JustifyContent.Center" Gap="0.5rem">
+                                <RadzenLabel Text=@campo.Campo.Nome Component="RadzenDatePickerBindValue" Style="font-weight: bold;" />
+                                <RadzenDatePicker Disabled="true" @bind-Value=@_dateValue Name="RadzenDatePickerBindValue" ShowCalendarWeek Style="width: 100%;" />
+                            </RadzenStack>
+                        }
+                        @if (campo.Campo.TipoCampo?.Descricao == "número")
+                        {
+                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">
+                                <b>@campo.Campo.Nome</b>
+                            </RadzenText>
+                            <RadzenNumeric ShowUpDown="false" Disabled="true" TValue="int?" @bind-Value=@_intValue Style="width: 100%;" />
+                        }
+                        @if (campo.Campo.TipoCampo?.Descricao == "booleano")
+                        {
+                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">
+                                <b>@campo.Campo.Nome</b>
+                            </RadzenText>
+                            <div class="d-flex align-items-center">
+                                <label class="me-2">Não</label>
+                                <RadzenSwitch @bind-Value="_isON" Disabled="true" />
+                                <label class="ms-2">Sim</label>
+                            </div>
+                        }
+                        @if (campo.Campo.TipoCampo?.Descricao == "anexo")
+                        {
+                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">
+                                <b>@campo.Campo.Nome</b>
+                            </RadzenText>
+                            <RadzenUpload Disabled="true" Url="upload/single" Icon="upload" ChooseText="" Style="width: 100%" />
+                        }
+                        @if (campo.Campo.TipoCampo?.Descricao == "lookup")
+                        {
+                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">
+                                <b>@campo.Campo.Nome</b>
+                            </RadzenText>
+                            <RadzenDropDown Disabled="true" @bind-Value="@_value" Data="@_dummyList" Style="width: 100%;" />
+                        }
+                    </RadzenColumn>
+                }
+            }
+        </RadzenRow>
+    </RadzenCard>
+}
+else
+{
+    <EmptyListWarning Entity="campos" />
+}
+
+@code {
+    [Parameter] public IEnumerable<FormularioCampoDto> Campos { get; set; }
+
+    [Parameter] public bool IsDialog { get; set; } = false;
+
+    private string _value = "";
+    private DateTime? _dateValue;
+    private int? _intValue = 1;
+    private bool _isON = false;
+    private IEnumerable<string> _dummyList = new List<string> { "Valor 1", "Valor 2" };
+
+}

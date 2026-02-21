@@ -1,0 +1,12 @@
+@using Microsoft.AspNetCore.Components
+
+<div style="width:100%; height:100%; display:flex;">
+  <iframe src="@url"
+          style="flex:1; border:none;"
+          allowfullscreen />
+</div>
+
+@code
+{
+    [Parameter] public string url { get; set; }
+}

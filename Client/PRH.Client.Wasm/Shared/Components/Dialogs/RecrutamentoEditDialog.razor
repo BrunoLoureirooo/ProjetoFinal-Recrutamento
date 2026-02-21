@@ -1,0 +1,96 @@
+﻿@namespace PRH.Client.Wasm.Shared.Components.Dialogs
+
+@inject IRecrutamentoService RecrutamentoService
+@inject DialogService DialogService
+
+@inherits PRH.Client.Wasm.Pages.Notifications
+
+<div class="row g-3">
+    <div class="col-12 mb-3">
+        <label class="form-label">Nome</label>
+        <RadzenTextBox @bind-Value="_recrutamentoToEdit.Nome"
+        Placeholder="Nome..."
+        Name="Nome"
+        class="w-100" />
+    </div>
+
+    @if (IsAdministrador)
+    {
+        <div class="col-12 col-lg-6 mb-3">
+            <label class="form-label">Data</label>
+            <RadzenDatePicker @bind-Value="_recrutamentoToEdit.Data"
+                              DateFormat="dd/MM/yyyy"
+                              Name="Data"
+                              class="w-100" />
+        </div>
+        <div class="col-12 col-lg-6 mb-3">
+            <label class="form-label">Empresa</label>
+            <RadzenDropDown class="w-100"
+                                Placeholder="Empresa..."
+                                @bind-Value="@_empresaEdit"
+                                Data="@Empresas"
+                                TextProperty="@nameof(EmpresaDto.Nome)"
+                                Name="Empresa" />
+        </div>
+    }
+    else
+    {
+        <div class="col-12 mb-3">
+            <label class="form-label">Data</label>
+            <RadzenDatePicker @bind-Value="_recrutamentoToEdit.Data"
+                              DateFormat="dd/MM/yyyy"
+                              Name="Data"
+                              class="w-100" />
+        </div>
+    }
+    
+    <div class="col-6">
+        <RadzenButton Icon="save" Text="Salvar" Class="w-100 btn btn-primary" Click="@SaveEdit" />
+    </div>
+    <div class="col-6">
+        <RadzenButton Class="w-100 btn btn-light" Click="@CancelEdit">Cancelar</RadzenButton>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<EmpresaDto> Empresas { get; set; }
+    [Parameter] public RecrutamentoGetAllDto Recrutamento { get; set; }
+    [Parameter] public bool IsAdministrador { get; set; }
+    [Parameter] public bool IsDialog { get; set; } = false;
+
+    private RecrutamentoUpdateDto _recrutamentoToEdit = new();
+    private EmpresaDto _empresaEdit;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _recrutamentoToEdit = new RecrutamentoUpdateDto
+            {
+                Nome = Recrutamento.Nome,
+                Data = Recrutamento.Data,
+                EmpresaId = Recrutamento.Empresa?.Id ?? Guid.Empty
+            };
+        if (Recrutamento.Empresa is null)
+            Notify(NotificationSeverity.Warning, "Recrutamento sem empresa", "O recrutamento a editar não tem nenhuma empresa associada. Tem de selecionar uma");
+        else
+            _empresaEdit = Recrutamento.Empresa;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (_empresaEdit is null)
+        {
+            Notify(NotificationSeverity.Warning, "Recrutamento sem empresa", "O recrutamento a editar não tem nenhuma empresa associada. Tem de selecionar uma");
+            return;
+        }
+        _recrutamentoToEdit.EmpresaId = _empresaEdit.Id;
+        await RecrutamentoService.UpdateRecrutamentoAsync(Recrutamento.Id, _recrutamentoToEdit);
+
+        DialogService.Close(true);
+    }
+
+    private void CancelEdit()
+    {
+        DialogService.Close(false);
+    }
+}
+

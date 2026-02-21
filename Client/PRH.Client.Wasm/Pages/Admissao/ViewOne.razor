@@ -1,0 +1,50 @@
+﻿@page "/admissao/{Id}"
+@using PRH.Client.Wasm.ViewModels
+@using PRH.Shared.DataTransferObjets.CampoRespondido
+@using PRH.Shared.DataTransferObjets.Candidatura
+
+@inject ICandidaturaService CandidaturaService
+
+@inherits Notifications
+
+@attribute [Authorize]
+
+@if (_admissao is null)
+{
+    <LoadingEntity Entity=@($"admissão {Id}") />
+}
+else
+{
+    <HeaderWithSubtext Title=@($"Admissão de {_admissao.NomeCandidato}")
+                       Subtext=@($"{_admissao.Id}") />
+
+    <div class="container mt-4">
+        <Card>
+            <div class="flex-column mb-3">
+                <div class="col-3">
+                    <p>Admitido na empresa @_admissao.Empresa.Nome</p>
+                </div>
+                <div class="col-3">
+                    <p>NIF: @_admissao.NIFcandidato</p>
+                </div>
+                <div class="col-3">
+                    <p>Contacto: @_admissao.ContactoCandidato</p>
+                </div>
+                <div class="col-3">
+                    <p>E-mail: @_admissao.EmailCandidato</p>
+                </div>
+            </div>
+        </Card>
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; }
+
+    private CandidaturaGetOneDto _admissao;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _admissao = await CandidaturaService.GetCandidaturaByIdAsync(Guid.Parse(Id));
+    }
+}

@@ -1,0 +1,264 @@
+﻿@page "/templates/{id}"
+@using Microsoft.AspNetCore.Authorization
+@inject Radzen.DialogService DialogService
+@inject HttpClient Http
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Client.Wasm.Shared.Components
+@using PRH.Shared.DataTransferObjets
+@using System.Text.RegularExpressions
+
+@inject ITemplateService TemplateService
+@inject IEmpresaService EmpresaService
+@inject ITipoDocumentoService TipoDocumentoService
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize]
+
+<h1>Edição do Template: <b>@(template?.TipoDocumentoNome ?? "Carregando...")</b></h1>
+
+<div style="display: flex; flex-direction: column; width: 100%; margin-top: 1rem;">
+	@if (isLoading)
+	{
+		<LoadingEntity Entity=@($"template {id}") />
+	}
+	else if (template != null)
+	{
+		<RadzenTemplateForm Data="@template" TItem="TemplateDto" Submit="@SalvarAlteracoes" Style="width: 100%;">
+			<RadzenFieldset Text="Dados do Template">
+
+				<div class="mb-2">
+					<RadzenLabel Text="Empresa: " Component="label" />
+					<RadzenDropDown Data="@empresas" TextProperty="Nome" ValueProperty="Id" @bind-Value="template.EmpresaId"
+						Placeholder="Selecione uma Empresa..." Style="width: 300px;" Change="@OnEmpresaChange" />
+
+				</div>
+				<div class="mb-2">
+					<RadzenLabel Text="Tipo de Documento: " Component="label" />
+					<RadzenDropDown Data="@tiposDocumentos" TextProperty="Nome" ValueProperty="Id"
+						@bind-Value="template.TipoDocumentoId" Placeholder="Selecione um Tipo..." Style="width: 300px;" />
+				</div>
+
+
+				<div class="mb-3">
+					<RadzenLabel Text="Caminho do Template" Component="Caminho"
+						Style="display:block; margin-bottom: 4px;" />
+					<RadzenTextBox Value="@template.Caminho" Name="Caminho" Style="width: 100%;" ReadOnly="true" />
+					<RadzenRequiredValidator Component="Caminho" Text="O Caminho é obrigatório" />
+				</div>
+
+				<div class="mb-4" style="display: flex; align-items: center; justify-content: space-between;">
+					<div>
+						<RadzenLabel Text="Preenchível: " Component="Preenchivel" />
+						<RadzenSwitch @bind-Value="template.Preenchivel" Name="Preenchivel" />
+
+					</div>
+					<div>
+
+						<RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="10px">
+							
+							<RadzenButton Text="Cancelar" Icon="close" ButtonStyle="ButtonStyle.Secondary"
+								Click="@OnCancel" />
+							<RadzenButton Text="Salvar Alterações" Icon="save" ButtonStyle="ButtonStyle.Primary"
+								Click="@SalvarAlteracoes" />
+						</RadzenStack>
+					</div>
+				</div>
+				<div class="mb-2">
+					<div style="width: 100%; 
+	                height: 300px; 
+	                border: 1px dashed #ccc; 
+	                border-radius: 4px; 
+	                display: flex; 
+	                flex-direction: column;
+	                align-items: center; 
+	                justify-content: center;
+	                color: #666;
+	                position: relative;">
+						@if (!ficheiroRemovido && !string.IsNullOrEmpty(template.Caminho))
+						{
+							<RadzenIcon Icon="description" Style="font-size: 64px; color: #999;" />
+							<p style="margin: 10px 0 0 0; font-size: 1.1em;">@System.IO.Path.GetFileName(template.Caminho)</p>
+							<RadzenButton Text="Remover Ficheiro" Icon="delete" Style="margin-top: 10px;"
+								Click="@RemoverFicheiro" ButtonStyle="ButtonStyle.Danger" />
+						}
+						else
+						{
+							<InputFile OnChange="HandleFileSelected" accept=".docx" multiple="false" key="@inputFileKey"
+								style="opacity: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer;" />
+
+							<RadzenIcon Icon="description" Style="font-size: 64px; color: #999;" />
+							@if (string.IsNullOrEmpty(novoFicheiroNome))
+							{
+								<p style="margin: 10px 0 0 0; font-size: 1.1em;">Clique ou arraste para selecionar um novo ficheiro
+									.docx</p>
+							}
+							else
+							{
+								<p style="margin: 10px 0 0 0; font-size: 1.1em;">@novoFicheiroNome</p>
+							}
+						}
+					</div>
+				</div>
+
+			</RadzenFieldset>
+		</RadzenTemplateForm>
+	}
+</div>
+
+@code {
+	[Parameter] public string id { get; set; } = string.Empty;
+	private TemplateDto? template;
+	private bool isLoading = true;
+	private List<TipoDocumentoDto> tiposDocumentos = new List<TipoDocumentoDto>();
+	private Guid? selectedTipoDocumentoId;
+
+	private List<EmpresaDto> empresas = new List<EmpresaDto>();
+	private Guid? selectedEmpresaId;
+
+	private bool ficheiroRemovido = false;
+	private IBrowserFile? novoFicheiro;
+	private string novoFicheiroNome = string.Empty;
+	private string inputFileKey = Guid.NewGuid().ToString();
+
+	private string errorMessage = string.Empty;
+	private List<TipoDocumentoDto> list = new List<TipoDocumentoDto>();
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			template = await TemplateService.GetTemplateByIdAsync(Guid.Parse(id));
+			await CarregarEmpresas();
+			await CarregarTodosTiposDocumentos(); // Carrega todos os tipos inicialmente
+
+			// Adiciona o tipo de documento atual à lista, se existir e não estiver lá
+			if (template?.TipoDocumentoId != null && !tiposDocumentos.Any(td => td.Id == template.TipoDocumentoId))
+			{
+				var tipoAtual = await TipoDocumentoService.GetTipoDocumentoByIdAsync(template.TipoDocumentoId);
+				if (tipoAtual != null)
+				{
+					tiposDocumentos.Add(new TipoDocumentoDto { Id = tipoAtual.Id, Nome = tipoAtual.Nome });
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error loading template: {ex.Message}");
+		}
+		finally
+		{
+			isLoading = false;
+			StateHasChanged();
+		}
+	}
+
+	private async Task CarregarTodosTiposDocumentos()
+	{
+		var allTipos = await TipoDocumentoService.GetTipoDocumentosAsync();
+		tiposDocumentos = allTipos.Select(td => new TipoDocumentoDto { Id = td.Id, Nome = td.Nome }).ToList();
+	}
+
+	private async Task CarregarTiposDocumentosPorEmpresa(Guid empresaId)
+	{
+		var allTipos = await TipoDocumentoService.GetTipoDocumentosAsync();
+		tiposDocumentos = allTipos
+		.Where(td => td.EmpresaTipoDocumentos.Any(etd => etd.EmpresaId == empresaId))
+		.Select(td => new TipoDocumentoDto { Id = td.Id, Nome = td.Nome })
+		.ToList();
+		StateHasChanged();
+	}
+
+	private async Task CarregarEmpresas()
+	{
+		var empresasResponse = await EmpresaService.GetEmpresasAsync();
+		empresas = empresasResponse
+		.Select(e => new EmpresaDto
+		{
+			Id = e.Id,
+			Nome = e.Nome
+		})
+		.ToList();
+	}
+
+	private async Task OnEmpresaChange(object value)
+	{
+		if (value is Guid empresaId)
+		{
+			// Remove o tipo de documento atual da lista
+			if (template?.TipoDocumentoId != null)
+			{
+				tiposDocumentos.RemoveAll(td => td.Id == template.TipoDocumentoId);
+			}
+
+			template.EmpresaId = empresaId;
+			await CarregarTiposDocumentosPorEmpresa(empresaId);
+		}
+	}
+
+
+
+
+	private void HandleFileSelected(InputFileChangeEventArgs e)
+	{
+		novoFicheiro = e.File;
+		novoFicheiroNome = novoFicheiro?.Name ?? string.Empty;
+	}
+
+	private void RemoverFicheiro()
+	{
+		ficheiroRemovido = true;
+		template.Caminho = string.Empty;
+		novoFicheiro = null;
+		novoFicheiroNome = string.Empty;
+		inputFileKey = Guid.NewGuid().ToString();
+	}
+
+	private async Task SalvarAlteracoes()
+	{
+		try
+		{
+			if (template != null)
+			{
+				// Upload de novo ficheiro, se necessário
+				if (ficheiroRemovido && novoFicheiro != null)
+				{
+					var content = new MultipartFormDataContent();
+					var streamContent = new StreamContent(novoFicheiro.OpenReadStream(maxAllowedSize: 15 * 1024 * 1024));
+					streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(novoFicheiro.ContentType);
+					content.Add(streamContent, "file", novoFicheiro.Name);
+
+					var response = await Http.PostAsync("api/templates/upload", content);
+					if (response.IsSuccessStatusCode)
+					{
+						var result = await response.Content.ReadFromJsonAsync<FileUploadResponse>();
+						var match = Regex.Match(result?.FileUrl, "/uploads.*$");
+						template.Caminho = match.Value;
+					}
+					else
+					{
+						Console.WriteLine("Erro ao fazer upload do ficheiro.");
+					}
+				}
+
+				await TemplateService.UpdateTemplateAsync(Guid.Parse(id), template);
+				NavigationManager.NavigateTo("/templates");
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error saving template: {ex.Message}");
+		}
+	}
+
+
+
+	private void OnCancel()
+	{
+		NavigationManager.NavigateTo("/templates");
+	}
+
+	private class FileUploadResponse
+	{
+		public string? FileUrl { get; set; }
+	}
+}

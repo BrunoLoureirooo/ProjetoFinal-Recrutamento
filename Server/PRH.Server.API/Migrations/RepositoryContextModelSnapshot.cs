@@ -17,7 +17,10 @@ namespace PRH.Server.API.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.13")
+                .HasAnnotation("ProductVersion", "8.0.16")
+                .HasAnnotation("Proxies:ChangeTracking", false)
+                .HasAnnotation("Proxies:CheckEquality", false)
+                .HasAnnotation("Proxies:LazyLoading", true)
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -60,6 +63,12 @@ namespace PRH.Server.API.Migrations
                             Id = "52c71224-fe99-4ec0-9130-0f0de200eec9",
                             Name = "Funcionario",
                             NormalizedName = "FUNCIONARIO"
+                        },
+                        new
+                        {
+                            Id = "a3e57c14-2b8f-4e9f-9d4a-7a2b172b0e48",
+                            Name = "GestorCliente",
+                            NormalizedName = "GESTORCLIENTE"
                         });
                 });
 
@@ -154,6 +163,11 @@ namespace PRH.Server.API.Migrations
                         {
                             UserId = "fb874eba-9c48-4340-a690-bebb2195d379",
                             RoleId = "418b0ac3-4dba-4ccf-883e-63fdd7ac62a9"
+                        },
+                        new
+                        {
+                            UserId = "2e0f5a9b-9c94-4e3e-b8b0-8fd60b6ec7ce",
+                            RoleId = "a3e57c14-2b8f-4e9f-9d4a-7a2b172b0e48"
                         },
                         new
                         {
@@ -301,6 +315,22 @@ namespace PRH.Server.API.Migrations
                     b.ToTable("AspNetUsers", (string)null);
 
                     b.HasData(
+                        new
+                        {
+                            Id = "2e0f5a9b-9c94-4e3e-b8b0-8fd60b6ec7ce",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "6db9e8e1-5e87-4c3b-9e09-6b85ffb81e9f",
+                            Email = "gestor@trigenius.pt",
+                            EmailConfirmed = true,
+                            LockoutEnabled = false,
+                            Nome = "Gestor Trigénius",
+                            NormalizedEmail = "GESTOR@TRIGENIUS.PT",
+                            PasswordHash = "AQAAAAIAAYagAAAAEB5OdZcAoQdlpOaOhtC96TOIrAozjSt9ycEICcr36ZFCs5IBpl8wWtoDgFKI2cvGAA==",
+                            PhoneNumberConfirmed = false,
+                            RefreshTokenExpiryTime = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SecurityStamp = "3a4f7d5e-1c2a-4c73-8136-04e02b71a627",
+                            TwoFactorEnabled = false
+                        },
                         new
                         {
                             Id = "e3a5e7de-975c-4d0f-ad17-cd563e62789a",
@@ -479,6 +509,422 @@ namespace PRH.Server.API.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PRH.Server.Entities.Models.Campo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsOpcional")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NomeUnico")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("TipoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NomeUnico")
+                        .IsUnique();
+
+                    b.HasIndex("TipoId");
+
+                    b.ToTable("Campos", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("9de6573f-bebd-4277-a43f-02c74737ec9e"),
+                            IsOpcional = false,
+                            Nome = "Nome Completo",
+                            NomeUnico = "NOME_COMPLETO",
+                            TipoId = new Guid("a7d2f9c5-3b4e-41d8-b0f6-8e1c7a52d9f3")
+                        },
+                        new
+                        {
+                            Id = new Guid("2699d419-f8f2-4862-b0e6-add5469c3b48"),
+                            IsOpcional = false,
+                            Nome = "Correio Eletronico",
+                            NomeUnico = "CORREIO_ELETRONICO",
+                            TipoId = new Guid("a7d2f9c5-3b4e-41d8-b0f6-8e1c7a52d9f3")
+                        },
+                        new
+                        {
+                            Id = new Guid("d3a9f7c2-5b4e-41d8-b0f6-8e1c7a52d9f3"),
+                            IsOpcional = true,
+                            Nome = "Data de Nascimento",
+                            NomeUnico = "DATA_DE_NASCIMENTO",
+                            TipoId = new Guid("f8a3b2d7-9c5e-48d7-f1e0-3d6c9b85e4d1")
+                        },
+                        new
+                        {
+                            Id = new Guid("e2f1c7d5-3b4e-41d8-b0f6-8e1c7a52d9f4"),
+                            IsOpcional = false,
+                            Nome = "Contacto telefonico",
+                            NomeUnico = "CONTACTO_TELEFONICO",
+                            TipoId = new Guid("e7f2a3d6-8b4c-49d7-e0f9-4d5c9b74e2c9")
+                        },
+                        new
+                        {
+                            Id = new Guid("f3a2b6c4-4d3e-48d6-a0f8-7e1c2a59d3b5"),
+                            IsOpcional = true,
+                            Nome = "Morada de Residencia",
+                            NomeUnico = "MORADA_DE_RESIDENCIA",
+                            TipoId = new Guid("a7d2f9c5-3b4e-41d8-b0f6-8e1c7a52d9f3")
+                        },
+                        new
+                        {
+                            Id = new Guid("c5d8a4b3-6f2e-41d9-c0e5-6b3c7d52a9e7"),
+                            IsOpcional = true,
+                            Nome = "Meses de Experiencia",
+                            NomeUnico = "MESES_DE_EXPERIENCIA",
+                            TipoId = new Guid("e7f2a3d6-8b4c-49d7-e0f9-4d5c9b74e2c9")
+                        },
+                        new
+                        {
+                            Id = new Guid("b4c7d2a5-5e3f-49d8-b1f7-9e2c8a62e4d6"),
+                            IsOpcional = false,
+                            Nome = "Curriculum Vitae",
+                            NomeUnico = "CV",
+                            TipoId = new Guid("c9f7a5d2-4b3e-48d6-a0f8-7e1c2a59d3b4")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.CampoRespondido", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FormularioRespondidoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Resposta")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormularioRespondidoId");
+
+                    b.ToTable("CampoRespondidos", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("fbe325e0-1ea4-4353-b435-b603e11c166f"),
+                            FormularioRespondidoId = new Guid("14ee9f25-03b1-4460-8bc6-84ae47fa8422"),
+                            Nome = "Meses de Experiencia",
+                            Resposta = "92",
+                            Tipo = "int"
+                        },
+                        new
+                        {
+                            Id = new Guid("e6fd314e-094b-4985-89a2-a4353fb4367f"),
+                            FormularioRespondidoId = new Guid("14ee9f25-03b1-4460-8bc6-84ae47fa8422"),
+                            Nome = "Curriculum Vitae",
+                            Resposta = "Anexo enviado!",
+                            Tipo = "anexo"
+                        },
+                        new
+                        {
+                            Id = new Guid("5761aad9-1794-4bb4-8094-49b46dc4d028"),
+                            FormularioRespondidoId = new Guid("484157bd-2f6e-400e-93e2-c21018107514"),
+                            Nome = "Meses de Experiencia",
+                            Resposta = "24",
+                            Tipo = "int"
+                        },
+                        new
+                        {
+                            Id = new Guid("44fd408d-5ff3-4c4e-bdd1-c5d415592533"),
+                            FormularioRespondidoId = new Guid("484157bd-2f6e-400e-93e2-c21018107514"),
+                            Nome = "Curriculum Vitae",
+                            Resposta = "Anexo enviado!",
+                            Tipo = "anexo"
+                        },
+                        new
+                        {
+                            Id = new Guid("a0923d06-5f13-4573-84f0-e3e280536036"),
+                            FormularioRespondidoId = new Guid("8fafc343-e3a1-41fa-a70d-dd5f671beeaa"),
+                            Nome = "Meses de Experiencia",
+                            Resposta = "48",
+                            Tipo = "int"
+                        },
+                        new
+                        {
+                            Id = new Guid("a3b0aab6-1c63-44be-84aa-8be4f04f8721"),
+                            FormularioRespondidoId = new Guid("8fafc343-e3a1-41fa-a70d-dd5f671beeaa"),
+                            Nome = "Curriculum Vitae",
+                            Resposta = "Anexo enviado!",
+                            Tipo = "anexo"
+                        },
+                        new
+                        {
+                            Id = new Guid("764da4b2-4463-44e5-a076-4c74a7e81967"),
+                            FormularioRespondidoId = new Guid("a43c2f48-664d-4a5b-b17f-bb36fdde71c4"),
+                            Nome = "Nome Completo",
+                            Resposta = "Filipe Alberto Antunes Ribeiro",
+                            Tipo = "string"
+                        },
+                        new
+                        {
+                            Id = new Guid("7092f6a9-678a-4e4f-8fba-2934849c40d9"),
+                            FormularioRespondidoId = new Guid("a43c2f48-664d-4a5b-b17f-bb36fdde71c4"),
+                            Nome = "Correio Eletronico",
+                            Resposta = "filipe.ribeiro@mail.pt",
+                            Tipo = "string"
+                        },
+                        new
+                        {
+                            Id = new Guid("af366e8c-3f71-4b3e-8316-e3bbcf4fe8e8"),
+                            FormularioRespondidoId = new Guid("a43c2f48-664d-4a5b-b17f-bb36fdde71c4"),
+                            Nome = "Data de Nascimento",
+                            Resposta = "02-02-2000",
+                            Tipo = "data"
+                        },
+                        new
+                        {
+                            Id = new Guid("0c1492d8-fc0d-446a-b13a-e11e9efdc0e2"),
+                            FormularioRespondidoId = new Guid("a43c2f48-664d-4a5b-b17f-bb36fdde71c4"),
+                            Nome = "Contacto telefonico",
+                            Resposta = "917890123",
+                            Tipo = "número"
+                        },
+                        new
+                        {
+                            Id = new Guid("96788bfe-c6eb-4770-bfe2-843a1b6f5617"),
+                            FormularioRespondidoId = new Guid("a43c2f48-664d-4a5b-b17f-bb36fdde71c4"),
+                            Nome = "Morada de Residencia",
+                            Resposta = "Rua de Leiria, nº2, 2440-400, Leiria",
+                            Tipo = "string"
+                        },
+                        new
+                        {
+                            Id = new Guid("0dfba58e-bf6e-4e36-a13f-8a759a07db3f"),
+                            FormularioRespondidoId = new Guid("7f3c9126-56d4-4cb5-82df-3a27fc8e064f"),
+                            Nome = "Meses de Experiencia",
+                            Resposta = "24",
+                            Tipo = "int"
+                        },
+                        new
+                        {
+                            Id = new Guid("a1fcd194-81e7-40e5-97f4-9859d899cbe4"),
+                            FormularioRespondidoId = new Guid("7f3c9126-56d4-4cb5-82df-3a27fc8e064f"),
+                            Nome = "Curriculum Vitae",
+                            Resposta = "Anexo enviado!",
+                            Tipo = "anexo"
+                        },
+                        new
+                        {
+                            Id = new Guid("2e0c92b3-048e-460c-bc8e-16a0f93f7350"),
+                            FormularioRespondidoId = new Guid("e96e91a1-cc6f-4639-b1b1-05e04d5f3b79"),
+                            Nome = "Nome Completo",
+                            Resposta = "Ana Maria Antunes Martins",
+                            Tipo = "string"
+                        },
+                        new
+                        {
+                            Id = new Guid("e44c70e7-51d3-4c90-a80f-56f2cfcf24e0"),
+                            FormularioRespondidoId = new Guid("e96e91a1-cc6f-4639-b1b1-05e04d5f3b79"),
+                            Nome = "Correio Eletronico",
+                            Resposta = "ana.martins@mail.pt",
+                            Tipo = "string"
+                        },
+                        new
+                        {
+                            Id = new Guid("45e2e56b-9b17-49c7-8472-11fc70b29591"),
+                            FormularioRespondidoId = new Guid("e96e91a1-cc6f-4639-b1b1-05e04d5f3b79"),
+                            Nome = "Data de Nascimento",
+                            Resposta = "10-03-1998",
+                            Tipo = "data"
+                        },
+                        new
+                        {
+                            Id = new Guid("6c582d39-98ec-43d4-bd06-061674261f4d"),
+                            FormularioRespondidoId = new Guid("e96e91a1-cc6f-4639-b1b1-05e04d5f3b79"),
+                            Nome = "Contacto telefonico",
+                            Resposta = "912345678",
+                            Tipo = "número"
+                        },
+                        new
+                        {
+                            Id = new Guid("bf7d4145-7d93-4ec9-bd20-6b182a943228"),
+                            FormularioRespondidoId = new Guid("e96e91a1-cc6f-4639-b1b1-05e04d5f3b79"),
+                            Nome = "Morada de Residencia",
+                            Resposta = "Rua de Leiria, nº3, 2440-400, Leiria",
+                            Tipo = "string"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Candidatura", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ContactoCandidato")
+                        .HasMaxLength(9)
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmailCandidato")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("EstadoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("NIFcandidato")
+                        .HasMaxLength(9)
+                        .HasColumnType("int");
+
+                    b.Property<string>("NomeCandidato")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("VagaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EstadoId");
+
+                    b.HasIndex("VagaId");
+
+                    b.ToTable("Candidaturas", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("c373cd33-e77e-473c-8c0b-73aeb85955ef"),
+                            ContactoCandidato = 910582225,
+                            EmailCandidato = "manuel.silva@mail.pt",
+                            EstadoId = new Guid("4facf236-b3fc-4cab-bdef-5214f674dfec"),
+                            NIFcandidato = 255101791,
+                            NomeCandidato = "Manuel Da Silva",
+                            VagaId = new Guid("f12a9c84-3d7e-45b6-b0f2-8e5d1c73a9d8")
+                        },
+                        new
+                        {
+                            Id = new Guid("f5d01a84-7b92-4b2f-acbd-c74999e326f2"),
+                            ContactoCandidato = 913456789,
+                            EmailCandidato = "jose.ferreira@mail.pt",
+                            EstadoId = new Guid("4facf236-b3fc-4cab-bdef-5214f674dfec"),
+                            NIFcandidato = 219324964,
+                            NomeCandidato = "José Ferreira",
+                            VagaId = new Guid("f12a9c84-3d7e-45b6-b0f2-8e5d1c73a9d8")
+                        },
+                        new
+                        {
+                            Id = new Guid("e7a9b382-218f-4267-8f19-db9b6f564d92"),
+                            ContactoCandidato = 917890123,
+                            EmailCandidato = "filipe.ribeiro@mail.pt",
+                            EstadoId = new Guid("4facf236-b3fc-4cab-bdef-5214f674dfec"),
+                            NIFcandidato = 224977270,
+                            NomeCandidato = "Filipe Ribeiro",
+                            VagaId = new Guid("b7e4d12f-8c3a-49f6-a5d9-02c8b1e37f4a")
+                        },
+                        new
+                        {
+                            Id = new Guid("3f71c2d1-66c5-464d-90d5-9da11d02dc2c"),
+                            ContactoCandidato = 912345678,
+                            EmailCandidato = "ana.martins@mail.pt",
+                            EstadoId = new Guid("4facf236-b3fc-4cab-bdef-5214f674dfec"),
+                            NIFcandidato = 220913315,
+                            NomeCandidato = "Ana Martins",
+                            VagaId = new Guid("b7e4d12f-8c3a-49f6-a5d9-02c8b1e37f4a")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Cargo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Cargos", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("c3d91f85-7e42-4a6b-b2d0-8f1e37ac59b4"),
+                            Nome = "Porteiro"
+                        },
+                        new
+                        {
+                            Id = new Guid("5bbef10e-f9e6-45ad-abcb-bc63bbf13fbe"),
+                            Nome = "Engenheiro de Software"
+                        },
+                        new
+                        {
+                            Id = new Guid("f0d844f3-8c29-4c6d-8042-9473ec8191aa"),
+                            Nome = "Analista de Dados"
+                        },
+                        new
+                        {
+                            Id = new Guid("66a77ab9-a4d7-4c11-9b2d-928782b3bd95"),
+                            Nome = "Contador"
+                        },
+                        new
+                        {
+                            Id = new Guid("77552b58-f64b-4f22-8197-cbffd2aa7bfa"),
+                            Nome = "Assistente Administrativo"
+                        },
+                        new
+                        {
+                            Id = new Guid("7f10ab2e-a96c-4bbb-9ebc-c8a2b5811b89"),
+                            Nome = "Especialista em Recursos Humanos"
+                        },
+                        new
+                        {
+                            Id = new Guid("67dbb27d-53d7-4962-ab44-8f7a2c23a301"),
+                            Nome = "Recrutador"
+                        },
+                        new
+                        {
+                            Id = new Guid("5251ef65-3843-461e-a0fc-417e27cd6c0f"),
+                            Nome = "Atendente"
+                        },
+                        new
+                        {
+                            Id = new Guid("ffed9c07-3294-4b32-8c21-2de2bf2dbd32"),
+                            Nome = "Técnico de Manutenção"
+                        },
+                        new
+                        {
+                            Id = new Guid("dc8faf27-b7b3-406e-82c1-ca1f9339a7ea"),
+                            Nome = "Comercial de Vendas"
+                        });
+                });
+
             modelBuilder.Entity("PRH.Server.Entities.Models.Departamento", b =>
                 {
                     b.Property<Guid>("Id")
@@ -502,38 +948,393 @@ namespace PRH.Server.API.Migrations
                         new
                         {
                             Id = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             Nome = "Departamento Administrativo"
                         },
                         new
                         {
                             Id = new Guid("88754e7b-3fd7-4959-98d8-547aa2eb3da3"),
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             Nome = "Departamento Comercial"
                         },
                         new
                         {
                             Id = new Guid("3ba612d1-4bdb-4585-aeb7-4ab5dbac5c41"),
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             Nome = "Direção"
                         },
                         new
                         {
-                            Id = new Guid("3b41ce3b-be6e-4e44-8c3e-87f6de12d818"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
+                            Id = new Guid("a1a08f28-76f4-4fa0-a445-bf8615b9e5a4"),
+                            EmpresaId = new Guid("8588bf94-6622-4b1d-8f9f-d1b97ed7dc29"),
                             Nome = "Departamento Administrativo"
                         },
                         new
                         {
-                            Id = new Guid("104721f3-a3ec-4006-8906-f0204a2fedf2"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
+                            Id = new Guid("b3e0131b-34e7-4685-bd8b-d38da0a47467"),
+                            EmpresaId = new Guid("8588bf94-6622-4b1d-8f9f-d1b97ed7dc29"),
                             Nome = "Departamento Comercial"
                         },
                         new
                         {
-                            Id = new Guid("e3b46221-33cd-4277-82a7-f1756cfe570c"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
+                            Id = new Guid("d11b81a2-e593-45b2-9b1e-d87052a6d51d"),
+                            EmpresaId = new Guid("8588bf94-6622-4b1d-8f9f-d1b97ed7dc29"),
                             Nome = "Direção"
+                        },
+                        new
+                        {
+                            Id = new Guid("a7b278ea-e441-4422-bd5e-505f10ab5180"),
+                            EmpresaId = new Guid("35827598-d25d-4d08-b504-134c2331221d"),
+                            Nome = "Departamento Administrativo"
+                        },
+                        new
+                        {
+                            Id = new Guid("cd290d3b-4292-4c79-95fb-767602b40843"),
+                            EmpresaId = new Guid("35827598-d25d-4d08-b504-134c2331221d"),
+                            Nome = "Departamento Comercial"
+                        },
+                        new
+                        {
+                            Id = new Guid("e6d07c10-9285-4087-b698-7bfb5365635b"),
+                            EmpresaId = new Guid("35827598-d25d-4d08-b504-134c2331221d"),
+                            Nome = "Direção"
+                        },
+                        new
+                        {
+                            Id = new Guid("df428847-bff2-4f72-a226-9c8b6fe8cde6"),
+                            EmpresaId = new Guid("5c23d6bf-ecdb-4b98-99bb-20447f5bc13c"),
+                            Nome = "Departamento Administrativo"
+                        },
+                        new
+                        {
+                            Id = new Guid("b6286791-274b-4731-99fe-2f5485a7a97e"),
+                            EmpresaId = new Guid("5c23d6bf-ecdb-4b98-99bb-20447f5bc13c"),
+                            Nome = "Departamento Comercial"
+                        },
+                        new
+                        {
+                            Id = new Guid("bfed76f8-bb0b-4029-b06b-b27c4c00f937"),
+                            EmpresaId = new Guid("5c23d6bf-ecdb-4b98-99bb-20447f5bc13c"),
+                            Nome = "Direção"
+                        },
+                        new
+                        {
+                            Id = new Guid("c0c13e5d-6bb2-406f-a426-99b47d498b8d"),
+                            EmpresaId = new Guid("1aaa8376-c563-4d60-8260-0f376660593e"),
+                            Nome = "Departamento Administrativo"
+                        },
+                        new
+                        {
+                            Id = new Guid("0c7a22c9-5c78-4b7a-9e6b-12c38b7a94be"),
+                            EmpresaId = new Guid("1aaa8376-c563-4d60-8260-0f376660593e"),
+                            Nome = "Departamento Comercial"
+                        },
+                        new
+                        {
+                            Id = new Guid("12cc5d4a-2b83-427b-b6ec-7ca25f3c8311"),
+                            EmpresaId = new Guid("1aaa8376-c563-4d60-8260-0f376660593e"),
+                            Nome = "Direção"
+                        },
+                        new
+                        {
+                            Id = new Guid("2344f768-3897-4014-a703-b218a90b8883"),
+                            EmpresaId = new Guid("b03e1560-9c6a-4881-9224-362e1775da64"),
+                            Nome = "Departamento Administrativo"
+                        },
+                        new
+                        {
+                            Id = new Guid("70de2ea0-d67e-47b1-9094-b2392d8bbdf7"),
+                            EmpresaId = new Guid("b03e1560-9c6a-4881-9224-362e1775da64"),
+                            Nome = "Departamento Comercial"
+                        },
+                        new
+                        {
+                            Id = new Guid("2c6b82b4-8a44-48e6-b54e-8ec317e0b8fe"),
+                            EmpresaId = new Guid("b03e1560-9c6a-4881-9224-362e1775da64"),
+                            Nome = "Direção"
+                        },
+                        new
+                        {
+                            Id = new Guid("49716a7d-60c5-4692-b1b5-815ef290e7b1"),
+                            EmpresaId = new Guid("0758d87d-1a91-48e5-bfbb-ff7ab7b12171"),
+                            Nome = "Departamento Administrativo"
+                        },
+                        new
+                        {
+                            Id = new Guid("3b05f51c-bdb4-428d-b9a7-0d5fa17e8f83"),
+                            EmpresaId = new Guid("0758d87d-1a91-48e5-bfbb-ff7ab7b12171"),
+                            Nome = "Departamento Comercial"
+                        },
+                        new
+                        {
+                            Id = new Guid("779b7c9f-f02b-4b7f-bdfd-d7e290438b09"),
+                            EmpresaId = new Guid("0758d87d-1a91-48e5-bfbb-ff7ab7b12171"),
+                            Nome = "Direção"
+                        },
+                        new
+                        {
+                            Id = new Guid("5c68f7d0-d756-464f-b601-938d8fd957ba"),
+                            EmpresaId = new Guid("fb717a87-3f6b-4e5f-97d6-9676945f3c0c"),
+                            Nome = "Departamento Administrativo"
+                        },
+                        new
+                        {
+                            Id = new Guid("ad6d7d65-9d91-4bb1-b201-7d4590790416"),
+                            EmpresaId = new Guid("fb717a87-3f6b-4e5f-97d6-9676945f3c0c"),
+                            Nome = "Departamento Comercial"
+                        },
+                        new
+                        {
+                            Id = new Guid("e5cf4ff5-0a32-41b5-a82f-22639cfd7c55"),
+                            EmpresaId = new Guid("fb717a87-3f6b-4e5f-97d6-9676945f3c0c"),
+                            Nome = "Direção"
+                        },
+                        new
+                        {
+                            Id = new Guid("71a47f99-c88a-4a9b-b902-95ec7208b18a"),
+                            EmpresaId = new Guid("57c4dfc3-afa3-4975-a682-b6f4ceeb9d32"),
+                            Nome = "Departamento Administrativo"
+                        },
+                        new
+                        {
+                            Id = new Guid("91a99023-034e-4bfc-9471-ef3493b0a87c"),
+                            EmpresaId = new Guid("57c4dfc3-afa3-4975-a682-b6f4ceeb9d32"),
+                            Nome = "Departamento Comercial"
+                        },
+                        new
+                        {
+                            Id = new Guid("98b3da93-caf0-4bfe-b0f3-6597d98e5458"),
+                            EmpresaId = new Guid("57c4dfc3-afa3-4975-a682-b6f4ceeb9d32"),
+                            Nome = "Direção"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Documento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Caminho")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CamposPreenchidos")
+                        .HasMaxLength(1020)
+                        .HasColumnType("nvarchar(1020)");
+
+                    b.Property<Guid>("CandidaturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("DocumentoAssinado")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("TemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TipoDocumentoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TemplateId");
+
+                    b.HasIndex("TipoDocumentoId");
+
+                    b.ToTable("Documentos", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("c373cd33-e77e-473c-8c0b-73aeb85955ef"),
+                            Caminho = "/uploads/documentos/documento1.pdf",
+                            CandidaturaId = new Guid("c373cd33-e77e-473c-8c0b-73aeb85955ef"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("f5d01a84-7b92-4b2f-acbd-c74999e326f2"),
+                            Caminho = "/uploads/documentos/documento2.pdf",
+                            CandidaturaId = new Guid("c373cd33-e77e-473c-8c0b-73aeb85955ef"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
+                        },
+                        new
+                        {
+                            Id = new Guid("e7a9b382-218f-4267-8f19-db9b6f564d92"),
+                            Caminho = "/uploads/documentos/documento3.pdf",
+                            CandidaturaId = new Guid("c373cd33-e77e-473c-8c0b-73aeb85955ef"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("9519986b-c52a-73a6-ee45-3a46de2d84ea")
+                        },
+                        new
+                        {
+                            Id = new Guid("3f71c2d1-66c5-464d-90d5-9da11d02dc2c"),
+                            Caminho = "/uploads/documentos/documento1.pdf",
+                            CandidaturaId = new Guid("f5d01a84-7b92-4b2f-acbd-c74999e326f2"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("4be54f78-3793-4a0b-bf2b-145c37db5db4"),
+                            Caminho = "/uploads/documentos/documento2.pdf",
+                            CandidaturaId = new Guid("f5d01a84-7b92-4b2f-acbd-c74999e326f2"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
+                        },
+                        new
+                        {
+                            Id = new Guid("f75de97b-5ac1-4f58-91f4-1e1b0bb5d421"),
+                            Caminho = "/uploads/documentos/documento3.pdf",
+                            CandidaturaId = new Guid("f5d01a84-7b92-4b2f-acbd-c74999e326f2"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("9519986b-c52a-73a6-ee45-3a46de2d84ea")
+                        },
+                        new
+                        {
+                            Id = new Guid("dc3f1cf2-870c-4c09-bf9e-75cf18c6c8b7"),
+                            Caminho = "/uploads/documentos/documento1.pdf",
+                            CandidaturaId = new Guid("e7a9b382-218f-4267-8f19-db9b6f564d92"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("dcb4a1d2-cd43-48c2-bbb2-2e6f0be62e63"),
+                            Caminho = "/uploads/documentos/documento2.pdf",
+                            CandidaturaId = new Guid("e7a9b382-218f-4267-8f19-db9b6f564d92"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
+                        },
+                        new
+                        {
+                            Id = new Guid("1a8e2b19-2278-4565-b530-4e79a0d74a0f"),
+                            Caminho = "/uploads/documentos/documento3.pdf",
+                            CandidaturaId = new Guid("e7a9b382-218f-4267-8f19-db9b6f564d92"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("9519986b-c52a-73a6-ee45-3a46de2d84ea")
+                        },
+                        new
+                        {
+                            Id = new Guid("0e9a32ec-01cf-4c88-9cf3-3db59a4df057"),
+                            Caminho = "/uploads/documentos/documento1.pdf",
+                            CandidaturaId = new Guid("3f71c2d1-66c5-464d-90d5-9da11d02dc2c"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("84e8d5a0-e7a0-4fa1-a3b4-896517ce3cb1"),
+                            Caminho = "/uploads/documentos/documento2.pdf",
+                            CandidaturaId = new Guid("3f71c2d1-66c5-464d-90d5-9da11d02dc2c"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
+                        },
+                        new
+                        {
+                            Id = new Guid("9d7a9c13-dff6-4a23-93b9-4f53d3a13a6c"),
+                            Caminho = "/uploads/documentos/documento3.pdf",
+                            CandidaturaId = new Guid("3f71c2d1-66c5-464d-90d5-9da11d02dc2c"),
+                            DocumentoAssinado = false,
+                            TipoDocumentoId = new Guid("9519986b-c52a-73a6-ee45-3a46de2d84ea")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.DocumentosNecessarios", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CargoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TipoDocumentoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CargoId");
+
+                    b.HasIndex("TipoDocumentoId");
+
+                    b.ToTable("DocumentosNecessarios", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("d7b4e9c1-3a5f-48f2-a6d0-8c12f7a59e3d"),
+                            CargoId = new Guid("c3d91f85-7e42-4a6b-b2d0-8f1e37ac59b4"),
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("f2a9c7d4-5b3e-41d8-b0f6-8e1d3a72c9b5"),
+                            CargoId = new Guid("5bbef10e-f9e6-45ad-abcb-bc63bbf13fbe"),
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("f81cbd56-82f6-4122-9619-c985f5f55c41"),
+                            CargoId = new Guid("5bbef10e-f9e6-45ad-abcb-bc63bbf13fbe"),
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
+                        },
+                        new
+                        {
+                            Id = new Guid("76fd2228-5a8d-43bc-bcda-94b0a89693e5"),
+                            CargoId = new Guid("f0d844f3-8c29-4c6d-8042-9473ec8191aa"),
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
+                        },
+                        new
+                        {
+                            Id = new Guid("ccd164bd-9c33-4691-91c8-4296f8bf96f9"),
+                            CargoId = new Guid("66a77ab9-a4d7-4c11-9b2d-928782b3bd95"),
+                            TipoDocumentoId = new Guid("dd921d99-6365-f210-e2ce-cad7fc07eb54")
+                        },
+                        new
+                        {
+                            Id = new Guid("5f10eb2e-26ef-4d4d-813c-8c0ed511f4d4"),
+                            CargoId = new Guid("77552b58-f64b-4f22-8197-cbffd2aa7bfa"),
+                            TipoDocumentoId = new Guid("0085fcf5-3248-9296-8117-196221fc621b")
+                        },
+                        new
+                        {
+                            Id = new Guid("495307df-4b60-422a-bf5b-05b6f2519b4b"),
+                            CargoId = new Guid("7f10ab2e-a96c-4bbb-9ebc-c8a2b5811b89"),
+                            TipoDocumentoId = new Guid("0e5f31a3-24d3-9154-7255-2f49881605ec")
+                        },
+                        new
+                        {
+                            Id = new Guid("240062af-6a14-4f8a-a641-aa0a68f34b8d"),
+                            CargoId = new Guid("67dbb27d-53d7-4962-ab44-8f7a2c23a301"),
+                            TipoDocumentoId = new Guid("1dfb7d05-ea51-4bfb-e44b-f690c0d267bb")
+                        },
+                        new
+                        {
+                            Id = new Guid("c7a36717-bdc5-4ef1-b837-237c21478420"),
+                            CargoId = new Guid("5251ef65-3843-461e-a0fc-417e27cd6c0f"),
+                            TipoDocumentoId = new Guid("e5f5b964-d722-6f31-d6dd-6748f8011375")
+                        },
+                        new
+                        {
+                            Id = new Guid("a02f5b5e-e6cb-4e17-8d5c-d4c4d6e3b0a1"),
+                            CargoId = new Guid("ffed9c07-3294-4b32-8c21-2de2bf2dbd32"),
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("59d1ff72-3a46-4a85-88cd-6f7bcbe4fd19"),
+                            CargoId = new Guid("dc8faf27-b7b3-406e-82c1-ca1f9339a7ea"),
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("c4d6e2bb-6b8e-4fa0-9249-cd7b9e3fc89c"),
+                            CargoId = new Guid("dc8faf27-b7b3-406e-82c1-ca1f9339a7ea"),
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
                         });
                 });
 
@@ -554,13 +1355,135 @@ namespace PRH.Server.API.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
-                            Nome = "DEMO A"
+                            Id = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
+                            Nome = "TRIGÉNIUS"
                         },
                         new
                         {
-                            Id = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
-                            Nome = "DEMO B"
+                            Id = new Guid("8588bf94-6622-4b1d-8f9f-d1b97ed7dc29"),
+                            Nome = "TECH INNOVATORS"
+                        },
+                        new
+                        {
+                            Id = new Guid("35827598-d25d-4d08-b504-134c2331221d"),
+                            Nome = "MARKET LEADERS"
+                        },
+                        new
+                        {
+                            Id = new Guid("5c23d6bf-ecdb-4b98-99bb-20447f5bc13c"),
+                            Nome = "TECH CORP"
+                        },
+                        new
+                        {
+                            Id = new Guid("1aaa8376-c563-4d60-8260-0f376660593e"),
+                            Nome = "MARKET X"
+                        },
+                        new
+                        {
+                            Id = new Guid("b03e1560-9c6a-4881-9224-362e1775da64"),
+                            Nome = "FINANCE PLUS"
+                        },
+                        new
+                        {
+                            Id = new Guid("0758d87d-1a91-48e5-bfbb-ff7ab7b12171"),
+                            Nome = "HEALTHCARE SOLUTION"
+                        },
+                        new
+                        {
+                            Id = new Guid("fb717a87-3f6b-4e5f-97d6-9676945f3c0c"),
+                            Nome = "EDU INNOVATE"
+                        },
+                        new
+                        {
+                            Id = new Guid("57c4dfc3-afa3-4975-a682-b6f4ceeb9d32"),
+                            Nome = "CLEANING CO"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.EmpresaTipoDocumento", b =>
+                {
+                    b.Property<Guid>("EmpresaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TipoDocumentoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("EmpresaId", "TipoDocumentoId");
+
+                    b.HasIndex("TipoDocumentoId");
+
+                    b.ToTable("EmpresaTipoDocumentos", (string)null);
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Entrevista", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidaturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("DataHora")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EntrevistadorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notas")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("ResultadoEntrevistaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidaturaId");
+
+                    b.HasIndex("EntrevistadorId");
+
+                    b.HasIndex("ResultadoEntrevistaId");
+
+                    b.ToTable("Entrevistas", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("f7a2c9d4-3b5e-41d8-b0f6-8e1d7a52c9f3"),
+                            CandidaturaId = new Guid("c373cd33-e77e-473c-8c0b-73aeb85955ef"),
+                            DataHora = new DateTime(2025, 8, 20, 14, 30, 0, 0, DateTimeKind.Unspecified),
+                            EntrevistadorId = new Guid("ac42383e-9c00-4660-ace9-e71d942396a0"),
+                            Notas = "",
+                            ResultadoEntrevistaId = new Guid("6cf2183a-8658-4382-811e-620072e1e3f8")
+                        },
+                        new
+                        {
+                            Id = new Guid("5a5b435c-91af-4d85-a36a-dee386a272c8"),
+                            CandidaturaId = new Guid("f5d01a84-7b92-4b2f-acbd-c74999e326f2"),
+                            DataHora = new DateTime(2025, 3, 29, 10, 0, 0, 0, DateTimeKind.Unspecified),
+                            EntrevistadorId = new Guid("c646ceea-1e04-4e33-801b-7a8a29dc8390"),
+                            Notas = "Precisa melhorar na comunicação.",
+                            ResultadoEntrevistaId = new Guid("3b6a96f0-4b0b-447c-b906-fd7539d00f99")
+                        },
+                        new
+                        {
+                            Id = new Guid("e6c52afb-7368-469a-a130-6faa8875a533"),
+                            CandidaturaId = new Guid("e7a9b382-218f-4267-8f19-db9b6f564d92"),
+                            DataHora = new DateTime(2025, 3, 30, 9, 45, 0, 0, DateTimeKind.Unspecified),
+                            EntrevistadorId = new Guid("6664832b-40fd-4ca9-80c5-ff50b2df3ec8"),
+                            Notas = "Bom desempenho técnico.",
+                            ResultadoEntrevistaId = new Guid("6f6d7cc0-f4a7-4b7a-8fe4-890467b579f6")
+                        },
+                        new
+                        {
+                            Id = new Guid("913eb7f7-3fd4-4e62-889e-5c174ca4eeaf"),
+                            CandidaturaId = new Guid("3f71c2d1-66c5-464d-90d5-9da11d02dc2c"),
+                            DataHora = new DateTime(2025, 4, 1, 15, 20, 0, 0, DateTimeKind.Unspecified),
+                            EntrevistadorId = new Guid("de568654-11aa-4dd0-82eb-c699ea722e5f"),
+                            Notas = "Não atendeu aos requisitos mínimos.",
+                            ResultadoEntrevistaId = new Guid("387604b5-a3a8-4646-b7e8-eebe825e4b1e")
                         });
                 });
 
@@ -593,43 +1516,22 @@ namespace PRH.Server.API.Migrations
                         {
                             Id = new Guid("d6def626-d3cb-434c-bacd-c19f6b71719a"),
                             DepartamentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             Nome = "Equipa A"
                         },
                         new
                         {
                             Id = new Guid("8b77b08c-b28d-4883-ba8f-776015311465"),
                             DepartamentoId = new Guid("88754e7b-3fd7-4959-98d8-547aa2eb3da3"),
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
-                            Nome = "Equipa B"
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
+                            Nome = "Equipa A"
                         },
                         new
                         {
                             Id = new Guid("44b2bdb4-d9ec-404b-90f9-46876d8c0e87"),
                             DepartamentoId = new Guid("3ba612d1-4bdb-4585-aeb7-4ab5dbac5c41"),
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
-                            Nome = "Equipa C"
-                        },
-                        new
-                        {
-                            Id = new Guid("5bd7206e-c5b0-4313-9156-bc76805f4773"),
-                            DepartamentoId = new Guid("3b41ce3b-be6e-4e44-8c3e-87f6de12d818"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             Nome = "Equipa A"
-                        },
-                        new
-                        {
-                            Id = new Guid("d2fe96ee-8128-43e4-8625-c0a1decd963c"),
-                            DepartamentoId = new Guid("104721f3-a3ec-4006-8906-f0204a2fedf2"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
-                            Nome = "Departamento Comercial"
-                        },
-                        new
-                        {
-                            Id = new Guid("a31cb43a-41c4-45ef-b437-bd9951dd8dfd"),
-                            DepartamentoId = new Guid("e3b46221-33cd-4277-82a7-f1756cfe570c"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
-                            Nome = "Direção"
                         });
                 });
 
@@ -656,14 +1558,198 @@ namespace PRH.Server.API.Migrations
                         new
                         {
                             Id = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             Nome = "Sede"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Formulario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NomeUnico")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("TipoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NomeUnico")
+                        .IsUnique();
+
+                    b.HasIndex("TipoId");
+
+                    b.ToTable("Formularios", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("52083369-c174-469b-a7ed-844c23bbd948"),
+                            Nome = "Formulario de Contratação",
+                            NomeUnico = "FORMULARIO_DE_CONTRATACAO",
+                            TipoId = new Guid("f3a7d9c2-5b4e-41d8-b0f6-8e1c7a52d9f3")
                         },
                         new
                         {
-                            Id = new Guid("a9340a8f-31e2-474e-9372-d564996a33ab"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
-                            Nome = "Sede"
+                            Id = new Guid("9f8d6c82-6a47-4c13-a2b6-cc7e16f1b3a4"),
+                            Nome = "Dados Pessoais",
+                            NomeUnico = "DADOS_PESSOAIS",
+                            TipoId = new Guid("d9c7a5f2-3b4e-48f6-a0d8-7f1e2c4a19b3")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.FormularioCampo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("CampoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FormularioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampoId");
+
+                    b.HasIndex("FormularioId");
+
+                    b.ToTable("FormularioCampo", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("37cb687c-f15b-4a58-8065-2a4e1ed298dc"),
+                            Ativo = true,
+                            CampoId = new Guid("9de6573f-bebd-4277-a43f-02c74737ec9e"),
+                            FormularioId = new Guid("9f8d6c82-6a47-4c13-a2b6-cc7e16f1b3a4")
+                        },
+                        new
+                        {
+                            Id = new Guid("8fe4996d-2391-4926-ba4d-5fa108924e0f"),
+                            Ativo = true,
+                            CampoId = new Guid("2699d419-f8f2-4862-b0e6-add5469c3b48"),
+                            FormularioId = new Guid("9f8d6c82-6a47-4c13-a2b6-cc7e16f1b3a4")
+                        },
+                        new
+                        {
+                            Id = new Guid("4894eba1-14a5-4b90-b3d8-49ae0412eaec"),
+                            Ativo = true,
+                            CampoId = new Guid("d3a9f7c2-5b4e-41d8-b0f6-8e1c7a52d9f3"),
+                            FormularioId = new Guid("9f8d6c82-6a47-4c13-a2b6-cc7e16f1b3a4")
+                        },
+                        new
+                        {
+                            Id = new Guid("7db5701f-e2cd-49a4-9aaa-ba3baf3b5e39"),
+                            Ativo = true,
+                            CampoId = new Guid("e2f1c7d5-3b4e-41d8-b0f6-8e1c7a52d9f4"),
+                            FormularioId = new Guid("9f8d6c82-6a47-4c13-a2b6-cc7e16f1b3a4")
+                        },
+                        new
+                        {
+                            Id = new Guid("20459860-6dd8-43f6-98bc-73f251d4e421"),
+                            Ativo = true,
+                            CampoId = new Guid("f3a2b6c4-4d3e-48d6-a0f8-7e1c2a59d3b5"),
+                            FormularioId = new Guid("9f8d6c82-6a47-4c13-a2b6-cc7e16f1b3a4")
+                        },
+                        new
+                        {
+                            Id = new Guid("23267585-5c70-4dd1-8a4a-96261de2f57f"),
+                            Ativo = true,
+                            CampoId = new Guid("c5d8a4b3-6f2e-41d9-c0e5-6b3c7d52a9e7"),
+                            FormularioId = new Guid("52083369-c174-469b-a7ed-844c23bbd948")
+                        },
+                        new
+                        {
+                            Id = new Guid("baf89140-a4b2-424b-ad69-308c98067072"),
+                            Ativo = true,
+                            CampoId = new Guid("b4c7d2a5-5e3f-49d8-b1f7-9e2c8a62e4d6"),
+                            FormularioId = new Guid("52083369-c174-469b-a7ed-844c23bbd948")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.FormularioRespondido", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidaturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidaturaId");
+
+                    b.ToTable("FormularioRespondidos", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("14ee9f25-03b1-4460-8bc6-84ae47fa8422"),
+                            CandidaturaId = new Guid("c373cd33-e77e-473c-8c0b-73aeb85955ef"),
+                            Nome = "Formulario de Contratação",
+                            Tipo = "Contratação"
+                        },
+                        new
+                        {
+                            Id = new Guid("484157bd-2f6e-400e-93e2-c21018107514"),
+                            CandidaturaId = new Guid("f5d01a84-7b92-4b2f-acbd-c74999e326f2"),
+                            Nome = "Formulario de Contratação",
+                            Tipo = "Contratação"
+                        },
+                        new
+                        {
+                            Id = new Guid("8fafc343-e3a1-41fa-a70d-dd5f671beeaa"),
+                            CandidaturaId = new Guid("e7a9b382-218f-4267-8f19-db9b6f564d92"),
+                            Nome = "Formulario de Contratação",
+                            Tipo = "Contratação"
+                        },
+                        new
+                        {
+                            Id = new Guid("a43c2f48-664d-4a5b-b17f-bb36fdde71c4"),
+                            CandidaturaId = new Guid("e7a9b382-218f-4267-8f19-db9b6f564d92"),
+                            Nome = "Dados Pessoais",
+                            Tipo = "Dados Pessoais"
+                        },
+                        new
+                        {
+                            Id = new Guid("7f3c9126-56d4-4cb5-82df-3a27fc8e064f"),
+                            CandidaturaId = new Guid("3f71c2d1-66c5-464d-90d5-9da11d02dc2c"),
+                            Nome = "Formulario de Contratação",
+                            Tipo = "Contratação"
+                        },
+                        new
+                        {
+                            Id = new Guid("e96e91a1-cc6f-4639-b1b1-05e04d5f3b79"),
+                            CandidaturaId = new Guid("3f71c2d1-66c5-464d-90d5-9da11d02dc2c"),
+                            Nome = "Dados Pessoais",
+                            Tipo = "Dados Pessoais"
                         });
                 });
 
@@ -690,37 +1776,19 @@ namespace PRH.Server.API.Migrations
                         new
                         {
                             Id = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a"),
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             Nome = "Comercial"
                         },
                         new
                         {
                             Id = new Guid("d75b5cb3-b1e4-4c46-9e7e-4ac763ac6d6e"),
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             Nome = "Programador"
                         },
                         new
                         {
                             Id = new Guid("37e401f4-8e10-481a-b86f-f1e832490022"),
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
-                            Nome = "Técnico"
-                        },
-                        new
-                        {
-                            Id = new Guid("74b62f70-b001-43e7-8202-e81e7ac48d67"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
-                            Nome = "Comercial"
-                        },
-                        new
-                        {
-                            Id = new Guid("f8013611-d94d-4684-ba5f-7b887e9e4674"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
-                            Nome = "Programador"
-                        },
-                        new
-                        {
-                            Id = new Guid("449ac1d8-71df-42df-9598-eb171d2c436e"),
-                            EmpresaId = new Guid("732ef83d-1dd0-42c8-a0df-5348b7c4d2ae"),
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             Nome = "Técnico"
                         });
                 });
@@ -758,6 +1826,8 @@ namespace PRH.Server.API.Migrations
 
                     b.HasIndex("ApplicationUserId");
 
+                    b.HasIndex("DepartamentoId");
+
                     b.HasIndex("EmpresaId");
 
                     b.HasIndex("EquipaId");
@@ -774,8 +1844,8 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("ac42383e-9c00-4660-ace9-e71d942396a0"),
                             ApplicationUserId = "e3a5e7de-975c-4d0f-ad17-cd563e62789a",
                             DepartamentoId = new Guid("3ba612d1-4bdb-4585-aeb7-4ab5dbac5c41"),
-                            Email = "apinto@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "apinto@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("44b2bdb4-d9ec-404b-90f9-46876d8c0e87"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a")
@@ -785,8 +1855,8 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("c646ceea-1e04-4e33-801b-7a8a29dc8390"),
                             ApplicationUserId = "251e0a52-d589-4845-ada8-daeb08be76ea",
                             DepartamentoId = new Guid("88754e7b-3fd7-4959-98d8-547aa2eb3da3"),
-                            Email = "acasaco@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "acasaco@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("8b77b08c-b28d-4883-ba8f-776015311465"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a")
@@ -796,8 +1866,8 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("6664832b-40fd-4ca9-80c5-ff50b2df3ec8"),
                             ApplicationUserId = "024e414c-d9d9-477a-bcb5-c6777bc7d3f9",
                             DepartamentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
-                            Email = "cazevedo@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "cazevedo@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("d6def626-d3cb-434c-bacd-c19f6b71719a"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("d75b5cb3-b1e4-4c46-9e7e-4ac763ac6d6e")
@@ -807,8 +1877,8 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("de568654-11aa-4dd0-82eb-c699ea722e5f"),
                             ApplicationUserId = "0eae7ece-6671-4f83-9caa-fc2d8eadd9ae",
                             DepartamentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
-                            Email = "fdias@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "fdias@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("d6def626-d3cb-434c-bacd-c19f6b71719a"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a")
@@ -818,8 +1888,8 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("8050f14d-759c-4b2a-ae2a-bdfee3207ecd"),
                             ApplicationUserId = "db21f4f6-0eb4-4905-a604-ae5ab05696a6",
                             DepartamentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
-                            Email = "frebelo@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "frebelo@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("d6def626-d3cb-434c-bacd-c19f6b71719a"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a")
@@ -829,8 +1899,8 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("c548fb8e-134e-4902-855a-22a20de02ade"),
                             ApplicationUserId = "f1cc0ba3-1050-43f7-86bd-98d4b7f7e216",
                             DepartamentoId = new Guid("88754e7b-3fd7-4959-98d8-547aa2eb3da3"),
-                            Email = "jfonseca@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "jfonseca@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("8b77b08c-b28d-4883-ba8f-776015311465"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a")
@@ -840,8 +1910,8 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("9f40195f-5607-49c4-a478-6c942d6ef5a6"),
                             ApplicationUserId = "804eef0f-2ec6-4b19-8b54-3373388f122b",
                             DepartamentoId = new Guid("3ba612d1-4bdb-4585-aeb7-4ab5dbac5c41"),
-                            Email = "malves@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "malves@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("44b2bdb4-d9ec-404b-90f9-46876d8c0e87"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a")
@@ -851,8 +1921,8 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("d4eb5d92-df45-4416-820a-8edeb679c383"),
                             ApplicationUserId = "faf84edb-dd0b-4de9-90f9-3671335d01c7",
                             DepartamentoId = new Guid("88754e7b-3fd7-4959-98d8-547aa2eb3da3"),
-                            Email = "sconceicao@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "sconceicao@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("8b77b08c-b28d-4883-ba8f-776015311465"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a")
@@ -862,8 +1932,8 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("68caf8ab-eecd-45b3-944f-6f4a75b5d226"),
                             ApplicationUserId = "4b93b0ab-aed4-4eb1-a40b-900229359841",
                             DepartamentoId = new Guid("88754e7b-3fd7-4959-98d8-547aa2eb3da3"),
-                            Email = "lneves@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "lneves@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("8b77b08c-b28d-4883-ba8f-776015311465"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a")
@@ -873,11 +1943,650 @@ namespace PRH.Server.API.Migrations
                             Id = new Guid("8d1d8fab-5bb9-4d42-ae14-683692dcbddd"),
                             ApplicationUserId = "620d12b3-1d00-4d7f-a262-795f004f83fe",
                             DepartamentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
-                            Email = "ocunha@empresa_demo_a.pt",
-                            EmpresaId = new Guid("bd00f150-16ea-48f1-b85e-cda3af329dac"),
+                            Email = "ocunha@Empresa_demo_a.pt",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
                             EquipaId = new Guid("d6def626-d3cb-434c-bacd-c19f6b71719a"),
                             EstabelecimentoId = new Guid("9fc5fb53-6945-4587-98bc-ef4bb4926c5e"),
                             FuncaoId = new Guid("97c6a146-61de-4d8b-a343-b54d81b0432a")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.GestorCliente", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("EmpresaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId");
+
+                    b.HasIndex("EmpresaId")
+                        .IsUnique();
+
+                    b.ToTable("GestorClientes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("b7f1dc79-3f3d-4d42-a6a4-d27e015f1d73"),
+                            ApplicationUserId = "2e0f5a9b-9c94-4e3e-b8b0-8fd60b6ec7ce",
+                            EmpresaId = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Lookup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Lookups", (string)null);
+
+                    b.HasDiscriminator<string>("Tipo").HasValue("Lookup");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.OpcoesCampoLookup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CampoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampoId");
+
+                    b.ToTable("OpcoesCampoLookups", (string)null);
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Recrutamento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("Data")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EmpresaID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaID");
+
+                    b.ToTable("Recrutamentos", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a3c9e742-5fbd-4d7e-9c12-ef8a6b1d34f7"),
+                            Data = new DateTime(2025, 3, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            EmpresaID = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
+                            Nome = "Recrutamento Engenheiro de Software Trigenius"
+                        },
+                        new
+                        {
+                            Id = new Guid("f28d7c91-3bae-45e6-a9f4-7cde812b65a3"),
+                            Data = new DateTime(2025, 3, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            EmpresaID = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
+                            Nome = "Recrutamento Comercial Trigenius"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Template", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Caminho")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<Guid>("EmpresaID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Preenchivel")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("TipoDocumentoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaID");
+
+                    b.HasIndex("TipoDocumentoId");
+
+                    b.ToTable("Templates", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("cfaefd3a-ed5d-bd76-f482-681184062cf4"),
+                            Caminho = "/uploads/templates/template1.docx",
+                            EmpresaID = new Guid("fb717a87-3f6b-4e5f-97d6-9676945f3c0c"),
+                            Preenchivel = true,
+                            TipoDocumentoId = new Guid("1dfb7d05-ea51-4bfb-e44b-f690c0d267bb")
+                        },
+                        new
+                        {
+                            Id = new Guid("68198395-86fb-a4a9-7cd8-2e2f1a0a54e4"),
+                            Caminho = "/uploads/templates/template1.docx",
+                            EmpresaID = new Guid("57c4dfc3-afa3-4975-a682-b6f4ceeb9d32"),
+                            Preenchivel = true,
+                            TipoDocumentoId = new Guid("e5f5b964-d722-6f31-d6dd-6748f8011375")
+                        },
+                        new
+                        {
+                            Id = new Guid("3d32560e-fd6e-7c05-217b-9d12ac7162b7"),
+                            Caminho = "/uploads/templates/template1.docx",
+                            EmpresaID = new Guid("f9c6e3f2-4a41-4b88-8d6a-58ad6a0c1d79"),
+                            Preenchivel = false,
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("1b40d243-3954-7af7-b147-18be34a3613e"),
+                            Caminho = "/uploads/templates/template3.docx",
+                            EmpresaID = new Guid("fb717a87-3f6b-4e5f-97d6-9676945f3c0c"),
+                            Preenchivel = false,
+                            TipoDocumentoId = new Guid("729b81db-7211-2292-33fe-d36d245a9ebb")
+                        },
+                        new
+                        {
+                            Id = new Guid("01832c81-1b3b-a883-a89d-00962a84f13c"),
+                            Caminho = "/uploads/templates/template4.docx",
+                            EmpresaID = new Guid("57c4dfc3-afa3-4975-a682-b6f4ceeb9d32"),
+                            Preenchivel = true,
+                            TipoDocumentoId = new Guid("4ef64bb2-a5e3-aec9-7b0d-9402eb49e31a")
+                        },
+                        new
+                        {
+                            Id = new Guid("d9cb8b06-df63-08dd-0f23-65084bd45517"),
+                            Caminho = "/uploads/templates/template1.docx",
+                            EmpresaID = new Guid("1aaa8376-c563-4d60-8260-0f376660593e"),
+                            Preenchivel = true,
+                            TipoDocumentoId = new Guid("0085fcf5-3248-9296-8117-196221fc621b")
+                        },
+                        new
+                        {
+                            Id = new Guid("14d14eb6-8147-b093-b225-293bf3c5f8f6"),
+                            Caminho = "/uploads/templates/template3.docx",
+                            EmpresaID = new Guid("35827598-d25d-4d08-b504-134c2331221d"),
+                            Preenchivel = true,
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
+                        },
+                        new
+                        {
+                            Id = new Guid("84997a3e-f837-564a-2ed9-edd636b07eb7"),
+                            Caminho = "/uploads/templates/template4.docx",
+                            EmpresaID = new Guid("1aaa8376-c563-4d60-8260-0f376660593e"),
+                            Preenchivel = false,
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
+                        },
+                        new
+                        {
+                            Id = new Guid("ea552d4c-2afa-8614-db5f-b6a5a184fa3b"),
+                            Caminho = "/uploads/templates/template1.docx",
+                            EmpresaID = new Guid("35827598-d25d-4d08-b504-134c2331221d"),
+                            Preenchivel = true,
+                            TipoDocumentoId = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1")
+                        },
+                        new
+                        {
+                            Id = new Guid("d9813c37-5237-4205-4640-3caa17bc1010"),
+                            Caminho = "/uploads/templates/template4.docx",
+                            EmpresaID = new Guid("b03e1560-9c6a-4881-9224-362e1775da64"),
+                            Preenchivel = false,
+                            TipoDocumentoId = new Guid("e5f5b964-d722-6f31-d6dd-6748f8011375")
+                        },
+                        new
+                        {
+                            Id = new Guid("cf7ac3e3-4723-b135-b642-026cda42aa0f"),
+                            Caminho = "/uploads/templates/template1.docx",
+                            EmpresaID = new Guid("fb717a87-3f6b-4e5f-97d6-9676945f3c0c"),
+                            Preenchivel = false,
+                            TipoDocumentoId = new Guid("83648738-2354-20f9-841d-f04127fa7980")
+                        },
+                        new
+                        {
+                            Id = new Guid("9a40d225-0b23-e48e-74e9-1706c3ce6c73"),
+                            Caminho = "/uploads/templates/template5.docx",
+                            EmpresaID = new Guid("0758d87d-1a91-48e5-bfbb-ff7ab7b12171"),
+                            Preenchivel = false,
+                            TipoDocumentoId = new Guid("e5f5b964-d722-6f31-d6dd-6748f8011375")
+                        },
+                        new
+                        {
+                            Id = new Guid("038c531d-d03e-d4cf-1200-64a7fbe1e810"),
+                            Caminho = "/uploads/templates/template4.docx",
+                            EmpresaID = new Guid("fb717a87-3f6b-4e5f-97d6-9676945f3c0c"),
+                            Preenchivel = true,
+                            TipoDocumentoId = new Guid("dd921d99-6365-f210-e2ce-cad7fc07eb54")
+                        },
+                        new
+                        {
+                            Id = new Guid("cc3d50b8-fc2b-0ca8-d637-4dfac7c389d1"),
+                            Caminho = "/uploads/templates/template4.docx",
+                            EmpresaID = new Guid("57c4dfc3-afa3-4975-a682-b6f4ceeb9d32"),
+                            Preenchivel = false,
+                            TipoDocumentoId = new Guid("1dfb7d05-ea51-4bfb-e44b-f690c0d267bb")
+                        },
+                        new
+                        {
+                            Id = new Guid("73d2ba3b-6f85-e10b-e65b-efe1059d36cd"),
+                            Caminho = "/uploads/templates/template2.docx",
+                            EmpresaID = new Guid("8588bf94-6622-4b1d-8f9f-d1b97ed7dc29"),
+                            Preenchivel = true,
+                            TipoDocumentoId = new Guid("e5f5b964-d722-6f31-d6dd-6748f8011375")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.TipoDocumento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Assinavel")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TipoDocumentos", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("9519986b-c52a-73a6-ee45-3a46de2d84ea"),
+                            Assinavel = false,
+                            Nome = "Anexo"
+                        },
+                        new
+                        {
+                            Id = new Guid("b28f569d-3505-a309-48f6-dc9bf13d4ff1"),
+                            Assinavel = true,
+                            Nome = "Contrato de Trabalho"
+                        },
+                        new
+                        {
+                            Id = new Guid("83648738-2354-20f9-841d-f04127fa7980"),
+                            Assinavel = true,
+                            Nome = "Termo de Responsabilidade"
+                        },
+                        new
+                        {
+                            Id = new Guid("dd921d99-6365-f210-e2ce-cad7fc07eb54"),
+                            Assinavel = false,
+                            Nome = "Contrato de Prestação de Serviços"
+                        },
+                        new
+                        {
+                            Id = new Guid("0085fcf5-3248-9296-8117-196221fc621b"),
+                            Assinavel = false,
+                            Nome = "Manual de Utilização"
+                        },
+                        new
+                        {
+                            Id = new Guid("0e5f31a3-24d3-9154-7255-2f49881605ec"),
+                            Assinavel = false,
+                            Nome = "Contrato com Termo"
+                        },
+                        new
+                        {
+                            Id = new Guid("1dfb7d05-ea51-4bfb-e44b-f690c0d267bb"),
+                            Assinavel = false,
+                            Nome = "Comprovativo médico e de segurança no trabalho"
+                        },
+                        new
+                        {
+                            Id = new Guid("e5f5b964-d722-6f31-d6dd-6748f8011375"),
+                            Assinavel = false,
+                            Nome = "Política de Recursos Humanos"
+                        },
+                        new
+                        {
+                            Id = new Guid("b620e5f7-4752-c363-efd9-5d01b182c88d"),
+                            Assinavel = false,
+                            Nome = "Termo de Confidencialidade (NDA)"
+                        },
+                        new
+                        {
+                            Id = new Guid("4ef64bb2-a5e3-aec9-7b0d-9402eb49e31a"),
+                            Assinavel = false,
+                            Nome = "Política de Privacidade"
+                        },
+                        new
+                        {
+                            Id = new Guid("729b81db-7211-2292-33fe-d36d245a9ebb"),
+                            Assinavel = true,
+                            Nome = "Regulamento Interno"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Vaga", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("CandidaturaDisponivel")
+                        .HasMaxLength(1)
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("CargoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("ModalidadeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("NumVagas")
+                        .HasMaxLength(5)
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("RecrutamentoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TipoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CargoId");
+
+                    b.HasIndex("ModalidadeId");
+
+                    b.HasIndex("RecrutamentoId");
+
+                    b.HasIndex("TipoId");
+
+                    b.ToTable("Vagas", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("f12a9c84-3d7e-45b6-b0f2-8e5d1c73a9d8"),
+                            CandidaturaDisponivel = true,
+                            CargoId = new Guid("5bbef10e-f9e6-45ad-abcb-bc63bbf13fbe"),
+                            Descricao = "Estamos em busca de profissionais apaixonados por tecnologia para integrar nossa equipe de desenvolvimento de software na TRIGENIUS. Atuando em projetos desafiadores, você será responsável por projetar, desenvolver e implementar soluções inovadoras, trabalhando em colaboração com times multidisciplinares para atender às demandas de clientes em diversos setores.\r\n\r\nPrincipais responsabilidades:\r\n\r\n    Desenvolver e manter aplicações de alta performance e escalabilidade.\r\n\r\n    Participar ativamente das decisões de arquitetura e design de sistemas.\r\n\r\n    Garantir a qualidade do código, aplicando boas práticas de engenharia de software.\r\n\r\n    Colaborar com equipes de produto e design para entregar soluções que gerem impacto real.\r\n\r\nRequisitos:\r\n\r\n    Experiência prévia com desenvolvimento em C#, .NET ou tecnologias similares.\r\n\r\n    Capacidade de trabalhar de forma colaborativa em ambientes ágeis.\r\n\r\n    Desejável conhecimento em arquitetura de microsserviços e boas práticas de DevOps.",
+                            ModalidadeId = new Guid("d5f20edc-3290-417f-b536-b5e053cdf376"),
+                            NumVagas = 12,
+                            RecrutamentoId = new Guid("a3c9e742-5fbd-4d7e-9c12-ef8a6b1d34f7"),
+                            TipoId = new Guid("b91e4d76-2c3a-45f8-ae7d-58f2b0d9c184")
+                        },
+                        new
+                        {
+                            Id = new Guid("b7e4d12f-8c3a-49f6-a5d9-02c8b1e37f4a"),
+                            CandidaturaDisponivel = true,
+                            CargoId = new Guid("dc8faf27-b7b3-406e-82c1-ca1f9339a7ea"),
+                            Descricao = "A TRIGENIUS está em busca de um(a) profissional dinâmico(a) e motivado(a) para integrar nossa equipe de vendas. O(a) Representante Comercial será responsável por prospectar novos clientes, apresentar soluções personalizadas e construir relacionamentos de longo prazo que impulsionem o crescimento da empresa.\r\n\r\nPrincipais responsabilidades:\r\n\r\n    Identificar oportunidades de negócio e prospectar novos clientes.\r\n\r\n    Realizar apresentações comerciais e negociações, buscando o fechamento de contratos.\r\n\r\n    Acompanhar o pós-venda para garantir a satisfação dos clientes.\r\n\r\n    Trabalhar em conjunto com o time de marketing para potencializar as estratégias comerciais.\r\n\r\nRequisitos:\r\n\r\n    Experiência prévia em vendas ou atendimento ao cliente.\r\n\r\n    Boa comunicação e habilidade de negociação.\r\n\r\n    Proatividade, organização e foco em resultados.",
+                            ModalidadeId = new Guid("014533bb-205a-4f33-9ce3-2e7fc96dca99"),
+                            NumVagas = 5,
+                            RecrutamentoId = new Guid("f28d7c91-3bae-45e6-a9f4-7cde812b65a3"),
+                            TipoId = new Guid("d5f1a8c3-79e2-4b0d-b6f7-91c4de38fa25")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.VagaFormulario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FormularioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("VagaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormularioId");
+
+                    b.HasIndex("VagaId");
+
+                    b.ToTable("VagaFormularios", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("d5fd6166-b990-4c8e-8747-f033563d1fb1"),
+                            FormularioId = new Guid("52083369-c174-469b-a7ed-844c23bbd948"),
+                            VagaId = new Guid("f12a9c84-3d7e-45b6-b0f2-8e5d1c73a9d8")
+                        },
+                        new
+                        {
+                            Id = new Guid("f8414f9e-1ab6-4262-8331-8343b73a49a7"),
+                            FormularioId = new Guid("52083369-c174-469b-a7ed-844c23bbd948"),
+                            VagaId = new Guid("b7e4d12f-8c3a-49f6-a5d9-02c8b1e37f4a")
+                        },
+                        new
+                        {
+                            Id = new Guid("3e1a9c4f-bc98-4a27-9d9b-1c8f8ea3b582"),
+                            FormularioId = new Guid("9f8d6c82-6a47-4c13-a2b6-cc7e16f1b3a4"),
+                            VagaId = new Guid("b7e4d12f-8c3a-49f6-a5d9-02c8b1e37f4a")
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Estado", b =>
+                {
+                    b.HasBaseType("PRH.Server.Entities.Models.Lookup");
+
+                    b.ToTable("Lookups", (string)null);
+
+                    b.HasDiscriminator().HasValue("Estado");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("4facf236-b3fc-4cab-bdef-5214f674dfec"),
+                            Descricao = "A Decorrer"
+                        },
+                        new
+                        {
+                            Id = new Guid("7f42b081-0924-487f-bef0-8edfb8b89766"),
+                            Descricao = "Admitido"
+                        },
+                        new
+                        {
+                            Id = new Guid("f812d64f-118a-4905-8242-f6790aacb1f0"),
+                            Descricao = "Rejeitado"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Modalidade", b =>
+                {
+                    b.HasBaseType("PRH.Server.Entities.Models.Lookup");
+
+                    b.ToTable("Lookups", (string)null);
+
+                    b.HasDiscriminator().HasValue("Modalidade");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("d5f20edc-3290-417f-b536-b5e053cdf376"),
+                            Descricao = "Presencial"
+                        },
+                        new
+                        {
+                            Id = new Guid("3bdd48c4-ad73-4241-8823-17792de8f311"),
+                            Descricao = "Virtual"
+                        },
+                        new
+                        {
+                            Id = new Guid("014533bb-205a-4f33-9ce3-2e7fc96dca99"),
+                            Descricao = "Hibrido"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Resultado", b =>
+                {
+                    b.HasBaseType("PRH.Server.Entities.Models.Lookup");
+
+                    b.ToTable("Lookups", (string)null);
+
+                    b.HasDiscriminator().HasValue("Resultado");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("6f6d7cc0-f4a7-4b7a-8fe4-890467b579f6"),
+                            Descricao = "Aprovado"
+                        },
+                        new
+                        {
+                            Id = new Guid("387604b5-a3a8-4646-b7e8-eebe825e4b1e"),
+                            Descricao = "Reprovado"
+                        },
+                        new
+                        {
+                            Id = new Guid("3b6a96f0-4b0b-447c-b906-fd7539d00f99"),
+                            Descricao = "Encaminhado para proxima fase"
+                        },
+                        new
+                        {
+                            Id = new Guid("6cf2183a-8658-4382-811e-620072e1e3f8"),
+                            Descricao = "Entrevista Agendada"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.TipoCampo", b =>
+                {
+                    b.HasBaseType("PRH.Server.Entities.Models.Lookup");
+
+                    b.ToTable("Lookups", (string)null);
+
+                    b.HasDiscriminator().HasValue("Campo");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a7d2f9c5-3b4e-41d8-b0f6-8e1c7a52d9f3"),
+                            Descricao = "string"
+                        },
+                        new
+                        {
+                            Id = new Guid("c9f7a5d2-4b3e-48d6-a0f8-7e1c2a59d3b4"),
+                            Descricao = "anexo"
+                        },
+                        new
+                        {
+                            Id = new Guid("e7f2a3d6-8b4c-49d7-e0f9-4d5c9b74e2c9"),
+                            Descricao = "número"
+                        },
+                        new
+                        {
+                            Id = new Guid("f8a3b2d7-9c5e-48d7-f1e0-3d6c9b85e4d1"),
+                            Descricao = "data"
+                        },
+                        new
+                        {
+                            Id = new Guid("b9b4c3d8-7a6f-41d9-a0e5-6b4c8d75f2e3"),
+                            Descricao = "booleano"
+                        },
+                        new
+                        {
+                            Id = new Guid("c1c5d6e7-8f9a-42b1-b0d2-7a8b9c0d1e2f"),
+                            Descricao = "lookup"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.TipoFormulario", b =>
+                {
+                    b.HasBaseType("PRH.Server.Entities.Models.Lookup");
+
+                    b.ToTable("Lookups", (string)null);
+
+                    b.HasDiscriminator().HasValue("Formulario");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("f3a7d9c2-5b4e-41d8-b0f6-8e1c7a52d9f3"),
+                            Descricao = "Contratação"
+                        },
+                        new
+                        {
+                            Id = new Guid("d9c7a5f2-3b4e-48f6-a0d8-7f1e2c4a19b3"),
+                            Descricao = "Dados Pessoais"
+                        },
+                        new
+                        {
+                            Id = new Guid("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+                            Descricao = "Experiencia Profissional"
+                        },
+                        new
+                        {
+                            Id = new Guid("b2c3d4e5-f678-90ab-cdef-234567890123"),
+                            Descricao = "Anexos"
+                        });
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.TipoVaga", b =>
+                {
+                    b.HasBaseType("PRH.Server.Entities.Models.Lookup");
+
+                    b.ToTable("Lookups", (string)null);
+
+                    b.HasDiscriminator().HasValue("Vaga");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("d5f1a8c3-79e2-4b0d-b6f7-91c4de38fa25"),
+                            Descricao = "Part-Time"
+                        },
+                        new
+                        {
+                            Id = new Guid("b91e4d76-2c3a-45f8-ae7d-58f2b0d9c184"),
+                            Descricao = "Full-Time"
                         });
                 });
 
@@ -932,6 +2641,47 @@ namespace PRH.Server.API.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PRH.Server.Entities.Models.Campo", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.TipoCampo", "TipoCampo")
+                        .WithMany("Campos")
+                        .HasForeignKey("TipoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("TipoCampo");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.CampoRespondido", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.FormularioRespondido", "FormularioRespondido")
+                        .WithMany("CampoRespondidos")
+                        .HasForeignKey("FormularioRespondidoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("FormularioRespondido");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Candidatura", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Estado", "Estado")
+                        .WithMany("Candidaturas")
+                        .HasForeignKey("EstadoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.Vaga", "Vaga")
+                        .WithMany("Candidaturas")
+                        .HasForeignKey("VagaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Estado");
+
+                    b.Navigation("Vaga");
+                });
+
             modelBuilder.Entity("PRH.Server.Entities.Models.Departamento", b =>
                 {
                     b.HasOne("PRH.Server.Entities.Models.Empresa", "Empresa")
@@ -941,6 +2691,89 @@ namespace PRH.Server.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Documento", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Template", "Template")
+                        .WithMany("Documentos")
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("PRH.Server.Entities.Models.TipoDocumento", "TipoDocumento")
+                        .WithMany("Documentos")
+                        .HasForeignKey("TipoDocumentoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Template");
+
+                    b.Navigation("TipoDocumento");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.DocumentosNecessarios", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Cargo", "Cargo")
+                        .WithMany("DocumentosNecessarios")
+                        .HasForeignKey("CargoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.TipoDocumento", "TipoDocumento")
+                        .WithMany("DocumentosNecessarios")
+                        .HasForeignKey("TipoDocumentoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cargo");
+
+                    b.Navigation("TipoDocumento");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.EmpresaTipoDocumento", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Empresa", "Empresa")
+                        .WithMany("EmpresaTipoDocumentos")
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.TipoDocumento", "TipoDocumento")
+                        .WithMany("EmpresaTipoDocumentos")
+                        .HasForeignKey("TipoDocumentoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("TipoDocumento");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Entrevista", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Candidatura", "Candidatura")
+                        .WithMany("Entrevistas")
+                        .HasForeignKey("CandidaturaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.Funcionario", "Entrevistador")
+                        .WithMany()
+                        .HasForeignKey("EntrevistadorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.Resultado", "Resultado")
+                        .WithMany("Entrevistas")
+                        .HasForeignKey("ResultadoEntrevistaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Candidatura");
+
+                    b.Navigation("Entrevistador");
+
+                    b.Navigation("Resultado");
                 });
 
             modelBuilder.Entity("PRH.Server.Entities.Models.Equipa", b =>
@@ -954,7 +2787,7 @@ namespace PRH.Server.API.Migrations
                     b.HasOne("PRH.Server.Entities.Models.Empresa", "Empresa")
                         .WithMany("Equipas")
                         .HasForeignKey("EmpresaId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Departamento");
@@ -971,6 +2804,47 @@ namespace PRH.Server.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Formulario", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.TipoFormulario", "Tipo")
+                        .WithMany("Formularios")
+                        .HasForeignKey("TipoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Tipo");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.FormularioCampo", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Campo", "Campo")
+                        .WithMany("FormularioCampos")
+                        .HasForeignKey("CampoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.Formulario", "Formulario")
+                        .WithMany("FormularioCampos")
+                        .HasForeignKey("FormularioId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Campo");
+
+                    b.Navigation("Formulario");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.FormularioRespondido", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Candidatura", "Candidatura")
+                        .WithMany("FormularioRespondidos")
+                        .HasForeignKey("CandidaturaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Candidatura");
                 });
 
             modelBuilder.Entity("PRH.Server.Entities.Models.Funcao", b =>
@@ -992,6 +2866,12 @@ namespace PRH.Server.API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("PRH.Server.Entities.Models.Departamento", "Departamento")
+                        .WithMany("Funcionarios")
+                        .HasForeignKey("DepartamentoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.HasOne("PRH.Server.Entities.Models.Empresa", "Empresa")
                         .WithMany("Funcionarios")
                         .HasForeignKey("EmpresaId")
@@ -1001,12 +2881,6 @@ namespace PRH.Server.API.Migrations
                     b.HasOne("PRH.Server.Entities.Models.Equipa", "Equipa")
                         .WithMany("Funcionarios")
                         .HasForeignKey("EquipaId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("PRH.Server.Entities.Models.Departamento", "Departamento")
-                        .WithMany("Funcionarios")
-                        .HasForeignKey("EstabelecimentoId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
@@ -1035,6 +2909,141 @@ namespace PRH.Server.API.Migrations
                     b.Navigation("Funcao");
                 });
 
+            modelBuilder.Entity("PRH.Server.Entities.Models.GestorCliente", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.ApplicationUser", "ApplicationUser")
+                        .WithMany()
+                        .HasForeignKey("ApplicationUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.Empresa", "Empresa")
+                        .WithOne("Gestor")
+                        .HasForeignKey("PRH.Server.Entities.Models.GestorCliente", "EmpresaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("ApplicationUser");
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.OpcoesCampoLookup", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Campo", "Campo")
+                        .WithMany("OpcoesCampoLookups")
+                        .HasForeignKey("CampoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Campo");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Recrutamento", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Empresa", "Empresa")
+                        .WithMany("Recrutamentos")
+                        .HasForeignKey("EmpresaID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Template", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Empresa", "Empresa")
+                        .WithMany("Templates")
+                        .HasForeignKey("EmpresaID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.TipoDocumento", "TipoDocumento")
+                        .WithMany("Templates")
+                        .HasForeignKey("TipoDocumentoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("TipoDocumento");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Vaga", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Cargo", "Cargo")
+                        .WithMany("Vagas")
+                        .HasForeignKey("CargoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.Modalidade", "Modalidade")
+                        .WithMany("Vagas")
+                        .HasForeignKey("ModalidadeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.Recrutamento", "Recrutamento")
+                        .WithMany("Vagas")
+                        .HasForeignKey("RecrutamentoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.TipoVaga", "Tipo")
+                        .WithMany("Vagas")
+                        .HasForeignKey("TipoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Cargo");
+
+                    b.Navigation("Modalidade");
+
+                    b.Navigation("Recrutamento");
+
+                    b.Navigation("Tipo");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.VagaFormulario", b =>
+                {
+                    b.HasOne("PRH.Server.Entities.Models.Formulario", "Formulario")
+                        .WithMany("VagaFormularios")
+                        .HasForeignKey("FormularioId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("PRH.Server.Entities.Models.Vaga", "Vaga")
+                        .WithMany("VagasFormularios")
+                        .HasForeignKey("VagaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Formulario");
+
+                    b.Navigation("Vaga");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Campo", b =>
+                {
+                    b.Navigation("FormularioCampos");
+
+                    b.Navigation("OpcoesCampoLookups");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Candidatura", b =>
+                {
+                    b.Navigation("Entrevistas");
+
+                    b.Navigation("FormularioRespondidos");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Cargo", b =>
+                {
+                    b.Navigation("DocumentosNecessarios");
+
+                    b.Navigation("Vagas");
+                });
+
             modelBuilder.Entity("PRH.Server.Entities.Models.Departamento", b =>
                 {
                     b.Navigation("Equipas");
@@ -1044,9 +3053,18 @@ namespace PRH.Server.API.Migrations
 
             modelBuilder.Entity("PRH.Server.Entities.Models.Empresa", b =>
                 {
+                    b.Navigation("EmpresaTipoDocumentos");
+
                     b.Navigation("Equipas");
 
                     b.Navigation("Funcionarios");
+
+                    b.Navigation("Gestor")
+                        .IsRequired();
+
+                    b.Navigation("Recrutamentos");
+
+                    b.Navigation("Templates");
                 });
 
             modelBuilder.Entity("PRH.Server.Entities.Models.Equipa", b =>
@@ -1059,9 +3077,79 @@ namespace PRH.Server.API.Migrations
                     b.Navigation("Funcionarios");
                 });
 
+            modelBuilder.Entity("PRH.Server.Entities.Models.Formulario", b =>
+                {
+                    b.Navigation("FormularioCampos");
+
+                    b.Navigation("VagaFormularios");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.FormularioRespondido", b =>
+                {
+                    b.Navigation("CampoRespondidos");
+                });
+
             modelBuilder.Entity("PRH.Server.Entities.Models.Funcao", b =>
                 {
                     b.Navigation("Funcionarios");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Recrutamento", b =>
+                {
+                    b.Navigation("Vagas");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Template", b =>
+                {
+                    b.Navigation("Documentos");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.TipoDocumento", b =>
+                {
+                    b.Navigation("Documentos");
+
+                    b.Navigation("DocumentosNecessarios");
+
+                    b.Navigation("EmpresaTipoDocumentos");
+
+                    b.Navigation("Templates");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Vaga", b =>
+                {
+                    b.Navigation("Candidaturas");
+
+                    b.Navigation("VagasFormularios");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Estado", b =>
+                {
+                    b.Navigation("Candidaturas");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Modalidade", b =>
+                {
+                    b.Navigation("Vagas");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.Resultado", b =>
+                {
+                    b.Navigation("Entrevistas");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.TipoCampo", b =>
+                {
+                    b.Navigation("Campos");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.TipoFormulario", b =>
+                {
+                    b.Navigation("Formularios");
+                });
+
+            modelBuilder.Entity("PRH.Server.Entities.Models.TipoVaga", b =>
+                {
+                    b.Navigation("Vagas");
                 });
 #pragma warning restore 612, 618
         }

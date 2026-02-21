@@ -1,0 +1,11 @@
+﻿@using PRH.Client.Wasm.Shared.Components
+
+<div class="d-flex justify-content-between align-items-center">
+    <Header Title="@Title" />
+    <p class="mb-5">@Subtext</p>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Titulo Default";
+    [Parameter] public string Subtext { get; set; } = "Subtexto Default";
+}

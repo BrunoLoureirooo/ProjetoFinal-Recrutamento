@@ -1,0 +1,196 @@
+﻿@page "/formularios/novo"
+@using System.Collections.ObjectModel
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Shared.DataTransferObjets.Formulario
+@using PRH.Shared.DataTransferObjets.Campo
+@using Microsoft.AspNetCore.Authorization
+@using PRH.Client.Wasm.Shared.Components
+
+@inject ICampoService CampoService
+@inject ILookupService LookupService
+@inject IFormularioService FormularioService
+@inject NavigationManager NavigationManager
+
+@inherits Notifications
+
+@attribute [Authorize]
+
+@if (_tiposFormularios is null)
+{
+    <LoadingEntity Entity="componentes para formulario" />
+}
+else
+{
+    <Header Title="Novo Formulario" />
+    <div class="d-flex align-items-center gap-4 mb-3">
+        <!-- Nome -->
+        <div class="d-flex align-items-center flex-grow-1" style="min-width: 300px;">
+            <RadzenLabel Text="Nome: " Style="margin-right: 8px; white-space: nowrap;" />
+            <RadzenTextBox @bind-value="_nomeFormulario" Style="width: 100%;" aria-label="Nome" />
+        </div>
+
+        <!-- Tipo de Formulário -->
+        <div class="d-flex align-items-center" style="min-width: 250px; max-width: 300px;">
+            <RadzenLabel Text="Tipo de Formulário:" Style="margin-right: 8px; white-space: nowrap;" />
+            <RadzenDropDown @bind-Value=@_tipoValue
+            Data=@_nomesFormulariosTipos
+            Change=@(args => OnTipoValueChanged(args?.ToString()))
+            Style="width: 100%; "
+            Name="DropDownBindValue" />
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-4 mb-3">
+        <div class="mb-3">
+            <label for="campos" class="form-label">Campos</label>
+            <div class="d-flex align-items-center gap-2">
+                <RadzenDropDown class="form-control w-100"
+                Placeholder="Selecione um campo..."
+                @bind-Value="_selectedCampo"
+                Data="@_campos"
+                TextProperty="@nameof(CampoGetDto.Nome)"
+                ValueProperty="@nameof(CampoGetDto.Id)" />
+
+                <RadzenButton Icon="add" Class="btn btn-success" Click="@AddCampo" title="add"/>
+            </div>
+
+        </div>
+
+    </div>
+    @if (_selectedCampos.Any())
+    {
+        @foreach (var campo in _selectedCampos)
+        {
+            <RadzenCard Class="mb-4 shadow-sm justify-content-between align-items-center d-flex" Style="cursor: pointer;" @onclick="() => RemoveCampo(campo)">
+                <h3>Campo @campo.Nome</h3>
+                <p>Tipo @campo.TipoCampo?.Descricao</p>
+            </RadzenCard>
+        }
+    }
+
+
+    @if (_isEditing)
+    {
+        <div class="mt-4 p-4 border rounded shadow-sm bg-light">
+            <h3 class="mb-4">Criar Nova Campo</h3>
+
+        </div>
+    }
+    else
+    {
+
+        <div class="d-flex gap-2 mt-4">
+            <RadzenButton Icon="save" Text="Salvar formulario" Class="btn btn-primary" Click="@SaveFormulario" />
+        </div>
+    }
+}
+
+
+@code {
+    private bool _isEditing = false;
+
+    private IEnumerable<LookupDto> _tiposFormularios;
+    private IEnumerable<CampoGetDto> _campos;
+    private LookupDto _tipoFormulario;
+
+    // Tipo parts
+    private string _tipoValue = "";
+    private string _novoTipoFormulario = "";
+    private IEnumerable<string> _nomesFormulariosTipos;
+
+    //campos
+    private CampoGetDto _selectedCampo;
+    private IEnumerable<CampoGetDto> _selectedCampos = new List<CampoGetDto>();
+
+    //formualrio
+    private string _nomeFormulario = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _tiposFormularios = await LookupService.GetTiposFormularioAsync();
+        _campos = await CampoService.GetCamposAsync();
+        if (_tiposFormularios != null)
+        {
+            foreach (var formularioTipo in _tiposFormularios)
+            {
+                _nomesFormulariosTipos = _tiposFormularios.Select(t => t.Descricao).ToList();
+            }
+        }
+    }
+
+    protected void OnTipoValueChanged(string newValue)
+    {
+        _novoTipoFormulario = newValue;
+    }
+
+    void AddCampo()
+    {
+        if (_selectedCampo is CampoGetDto CampoGetDto)
+        {
+            if (!_selectedCampos.Any(c => c.Id == CampoGetDto.Id))
+                _selectedCampos = _selectedCampos.Append(CampoGetDto).ToList();
+        }
+    }
+
+    void RemoveCampo(CampoGetDto campo)
+    {
+        if (campo == null || !_selectedCampos.Contains(campo)) return;
+
+        var list = _selectedCampos.ToList();
+        list.RemoveAll(c => c.Id == campo.Id);
+        _selectedCampos = list;
+    }
+
+    protected async Task SaveFormulario()
+    {
+        if (string.IsNullOrWhiteSpace(_nomeFormulario))
+        {
+            Failure("Erro", "O nome do formulário é obrigatório.");
+            return;
+        }
+
+        _tipoFormulario = _tiposFormularios.FirstOrDefault(t => t.Descricao == _tipoValue);
+
+        if (_tipoFormulario == null)
+        {
+            Failure("Erro", "Tipo de formulário inválido.");
+            return;
+        }
+
+        if (!_selectedCampos.Any())
+        {
+            Failure("Erro", "Adicione pelo menos um campo.");
+            return;
+        }
+
+        var novoFormulario = new FormularioCreateDto
+            {
+                Nome = _nomeFormulario,
+                TipoFormulario = _tipoFormulario,
+                FormularioCampos = new Collection<FormularioCampoDto>(
+                    _selectedCampos.Select(c => new FormularioCampoDto
+                    {
+                        CampoId = c.Id,
+                        Campo = c,
+                        Ativo = true
+                    }).ToList()
+                )
+
+            };
+
+        try
+        {
+            var resultado = await FormularioService.CreateFormularioAsync(novoFormulario);
+
+            Success("Sucesso", "Formulário criado com sucesso!");
+
+            NavigationManager.NavigateTo("/formularios");
+        }
+        catch (Exception ex)
+        {
+            Failure("Erro", $"Erro ao criar formulário: {ex.Message}");
+        }
+    }
+
+
+}

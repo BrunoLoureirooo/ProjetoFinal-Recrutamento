@@ -1,0 +1,33 @@
+@using Radzen
+@inject DialogService DialogService
+
+<RadzenTemplateForm Data="_valores" Submit="@SubmitCallback">
+  @foreach(var campo in Campos)
+  {
+    <div class="mb-2">
+      <RadzenLabel Text="@campo" />
+      <RadzenTextBox @bind-Value="_valores[campo]" TValue="string" Style="width:100%" />
+    </div>
+  }
+  <RadzenButton Text="Enviar" Type="Submit" ButtonStyle="ButtonStyle.Primary" />
+</RadzenTemplateForm>
+
+@code {
+  [Parameter] public string[] Campos { get; set; } = Array.Empty<string>();
+  private Dictionary<string,string> _valores = new();
+
+  protected override void OnParametersSet()
+  {
+    foreach(var campo in Campos)
+      if (!_valores.ContainsKey(campo))
+        _valores[campo] = string.Empty;
+  }
+
+  private EventCallback<Dictionary<string,string>> SubmitCallback =>
+    EventCallback.Factory.Create<Dictionary<string,string>>(this, OnSubmit);
+
+  void OnSubmit(Dictionary<string,string> result)
+  {
+    DialogService.Close(result);
+  }
+}

@@ -1,0 +1,165 @@
+﻿@page "/admissoes/documentos/{id}"
+@using Microsoft.AspNetCore.Authorization
+@using PRH.Shared.DataTransferObjets
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Client.Wasm.Shared.Components
+@inject HttpClient ApiClient
+
+@inject IDocumentoService DocumentoService
+@inject ITipoDocumentoService TipoDocumentoService
+@inject NavigationManager NavigationManager
+@inject Radzen.DialogService DialogService
+
+@attribute [Authorize]
+
+@if (isLoading)
+{
+    <LoadingEntity Entity="documentos" />
+}
+else
+{
+    <HeaderWithButton Title="Documentos da Candidatura" Path="@($"/admissoes/documentos/adicionar/{id}")"
+        ButtonText="Adicionar Documento" />
+    <div class="container mt-4">
+
+        <FilterCard>
+            <div class="col-12 col-md-6 col-lg-4">
+                <RadzenTextBox class="w-100" Placeholder="Pesquisar documento..." @bind-Value="searchTerm"
+                    @onkeydown="@(e => PesquisarTipo())" />
+            </div>
+            <div class="col-12 col-md-2">
+                <RadzenButton Icon="search" Text="Filtrar" Click="@PesquisarTipo" Class="w-100 btn btn-primary" />
+            </div>
+        </FilterCard>
+        <ListAllGrid TItem="DocumentoDto" Entities="@documentos" EntityName="documentos">
+            <RowTemplate Context="doc">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">
+                            @(_tipos.FirstOrDefault(t => t.Id == doc.TipoDocumentoId)?.Nome ?? "-")
+                        </h5>
+                        <p class="mb-0 text-muted small">
+                            @{
+                                var tipo = _tipos.FirstOrDefault(t => t.Id == doc.TipoDocumentoId);
+                            }
+                            @(
+                                tipo is null ? "-"
+                                : !tipo.Assinavel ? "Não é preciso assinar"
+                                : doc.DocumentoAssinado ? "Documento assinado"
+                                : "Documento por assinar"
+                            )
+                        </p>
+                    </Content>
+                <Buttons>
+                    <RadzenButton Icon="visibility" Tooltip="Visualizar" Click="@(args => PreviewPdf(doc.Caminho))"
+                        Class="btn btn-primary" />
+                    <RadzenButton Icon="edit" Tooltip="Editar" Click="@(args => EditarDocumento(doc.Id))"
+                        Class="btn btn-primary" />
+                    @if (!doc.DocumentoAssinado
+                                        && _tipos.Any(t => t.Id == doc.TipoDocumentoId && t.Assinavel))
+                        {
+                            <RadzenButton Icon="signature" Tooltip="Assinar" Click="@(args => AssinarDocumento(doc.Id))"
+                                Class="btn btn-primary" />
+                        }
+                        <RadzenButton Icon="delete" Tooltip="Excluir" Class="btn btn-primary"
+                            Click="@(args => RemoverDocumento(doc.Id))" />
+                    </Buttons>
+                </EntityCard>
+            </RowTemplate>
+        </ListAllGrid>
+    </div>
+}
+
+@code {
+    private string searchTerm = string.Empty;
+    private IEnumerable<DocumentoDto> documentos = new List<DocumentoDto>();
+    private IEnumerable<DocumentoDto> allDocumentos = new List<DocumentoDto>();
+    private IEnumerable<TipoDocumentoDto> _tipos = new List<TipoDocumentoDto>();
+    private bool isLoading = true;
+    [Parameter] public string id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            allDocumentos = (await DocumentoService.GetDocumentosByCandidaturaIdAsync(Guid.Parse(id))).ToList();
+            documentos = allDocumentos;
+
+            _tipos = (await TipoDocumentoService.GetTipoDocumentosAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar documentos: {ex.Message}");
+            documentos = new List<DocumentoDto>();
+            allDocumentos = documentos;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void PesquisarTipo()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            documentos = allDocumentos;
+        }
+        else
+        {
+            var termo = searchTerm.Trim();
+            documentos = allDocumentos
+            .Where(doc =>
+            {
+                var tipo = _tipos.FirstOrDefault(t => t.Id == doc.TipoDocumentoId);
+                return tipo != null && tipo.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase);
+            })
+            .ToList();
+        }
+
+        StateHasChanged();
+    }
+
+    private void PreviewPdf(string caminho)
+    {
+        var absoluteUrl = new Uri(ApiClient.BaseAddress, caminho).ToString();
+
+        DialogService.Open<PdfViewer>(
+        "Visualizar Documento",
+        new Dictionary<string, object> { ["url"] = absoluteUrl },
+        new DialogOptions
+        {
+            Width = "90vw",
+            Height = "90vh",
+            ContentCssClass = "h-100"
+        });
+    }
+
+    private void EditarDocumento(Guid documentoId)
+    {
+        NavigationManager.NavigateTo($"/admissoes/documento/{documentoId}");
+    }
+
+    private void AssinarDocumento(Guid documentoId)
+    {
+        NavigationManager.NavigateTo($"/admissoes/documentos/assinar/{documentoId}");
+    }
+
+    private async Task RemoverDocumento(Guid documentoId)
+    {
+        var confirmed = await DialogService.Confirm("Tem certeza que deseja excluir este documento?", "Confirmar exclusão");
+        if (confirmed == true)
+        {
+            try
+            {
+                await DocumentoService.DeleteDocumentoAsync(documentoId);
+                allDocumentos = allDocumentos.Where(d => d.Id != documentoId);
+                PesquisarTipo();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Erro ao excluir: {ex.Message}");
+            }
+        }
+    }
+}

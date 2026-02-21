@@ -1,0 +1,232 @@
+@page "/admissoes/documentos/adicionar/{id}"
+
+@using Microsoft.AspNetCore.Components.Forms
+@using PRH.Client.Wasm.Services
+@using PRH.Client.Wasm.Shared.Components
+@using PRH.Shared.DataTransferObjets
+@using PRH.Client.Wasm.Services.Contracts
+@using System.Text.RegularExpressions
+@using System.Net.Http.Headers
+@inject IDocumentoService DocumentoService
+@inject ITemplateService TemplateService
+@inject ICandidaturaService CandidaturaService
+@inject ITipoDocumentoService TipoDocumentoService
+@inject NavigationManager NavigationManager
+@inject Radzen.DialogService DialogService
+@inject HttpClient Http
+
+<h1>Adicionar Documento</h1>
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="20px" Style="margin-top:20px; max-width:100%;">
+
+    <RadzenFieldset Text="Modo de criação" Style="items:center">
+        <RadzenRadioButtonList TValue="DocumentMode" @bind-Value="mode">
+            <Items>
+                <RadzenRadioButtonListItem Text="Enviar PDF" Value="DocumentMode.Upload" />
+                <RadzenRadioButtonListItem Text="Criar a partir de Template" Value="DocumentMode.Template"
+                    Style="margin-left:20px" />
+            </Items>
+        </RadzenRadioButtonList>
+    </RadzenFieldset>
+
+    @if (mode == DocumentMode.Upload)
+    {
+        <RadzenFieldset Text="Upload de PDF">
+            <div style="width: 100%; 
+                        height: 300px; 
+                        border: 1px dashed #ccc; 
+                        border-radius: 4px; 
+                        display: flex; 
+                        flex-direction: column;
+                        align-items: center; 
+                        justify-content: center;
+                        color: #666;
+                        position: relative;">
+                <InputFile OnChange="HandleFileSelected" accept="application/pdf" style="position:absolute; top:0; left:0;
+                                                              width:100%; height:100%; opacity:0; cursor:pointer;" />
+
+                <RadzenIcon Icon="description" Style="font-size: 64px; color: #999;" />
+                @if (selectedFile is null)
+                {
+                    <p>Clique ou arraste um PDF aqui</p>
+                }
+                else
+                {
+                    <p>Selecionado: <b>@selectedFile.Name</b></p>
+                }
+            </div>
+
+            <RadzenLabel Text="Tipo de Documento:" Style="margin-top:10px;" />
+            <RadzenDropDown Data="@_tipos" TextProperty="Nome" ValueProperty="Id" @bind-Value="selectedTipoDocumentoId"
+                Placeholder="Selecione o tipo..." Style="width:100%; margin-top:10px" />
+        </RadzenFieldset>
+    }
+    else
+    {
+        <RadzenFieldset Text="Criar a partir de Template">
+            <RadzenLabel Text="Template:" Style="margin-bottom:4px;" />
+            <RadzenDropDown TItem="TemplateDto" TValue="Guid ?" Data="@templates" ValueProperty="Id"
+                @bind-Value="selectedTemplateId" Placeholder="Selecione um template…" Style="width:100%;">
+                <Template Context="tpl">
+                    @(_tipos
+                                    .FirstOrDefault(t => t.Id == tpl.TipoDocumentoId)?.Nome ?? "[sem tipo]")
+            </Template>
+        </RadzenDropDown>
+    </RadzenFieldset>
+        }
+
+    <div style="margin-top:10px; display:flex; align-items:center;">
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End"
+            AlignItems="AlignItems.Center" Gap="10px">
+            <RadzenButton Text="Cancelar" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@OnCancel" />
+            <RadzenButton Text="Criar Documento" Icon="add" ButtonStyle="ButtonStyle.Primary" Click="@OnSubmit" />
+        </RadzenStack>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger" role="alert" style="margin-left:20px;">
+                @errorMessage
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success" role="alert" style="margin-left:20px;">
+                @successMessage
+            </div>
+        }
+    </div>
+
+</RadzenStack>
+
+@code {
+    enum DocumentMode { Upload, Template }
+    private DocumentMode mode = DocumentMode.Upload;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    private IBrowserFile? selectedFile;
+    private List<TipoDocumentoDto> _tipos = new();
+    private List<TemplateDto> templates = new();
+    private Guid? selectedTipoDocumentoId;
+    private Guid? selectedTemplateId;
+
+    [Parameter] public string id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var candidatura = await CandidaturaService.GetCandidaturaByIdAsync(Guid.Parse(id));
+        var empresaId = candidatura.Empresa.Id;
+        
+
+        var allTipos = (await TipoDocumentoService.GetTipoDocumentosAsync()).ToList();
+        _tipos = allTipos
+            .Where(t => t.EmpresaTipoDocumentos.Any(et => et.EmpresaId == empresaId))
+            .OrderBy(t => t.Nome)
+            .ToList();
+
+        var allTemplates = (await TemplateService.GetTemplatesAsync()).ToList();
+        templates = allTemplates
+            .Where(t => t.EmpresaId == empresaId)
+            .OrderBy(t => t.TipoDocumentoNome)
+            .ToList();
+
+    }
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+    }
+
+    private async Task OnSubmit()
+    {
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        if (mode == DocumentMode.Upload)
+        {
+            if (selectedFile == null || !selectedTipoDocumentoId.HasValue)
+            {
+                errorMessage = "Por favor, selecione o PDF e o tipo de documento.";
+                return;
+            }
+
+            try
+            {
+                // Prepara o upload
+                var content = new MultipartFormDataContent();
+                var streamContent = new StreamContent(selectedFile.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024));
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue(selectedFile.ContentType);
+                content.Add(streamContent, "file", selectedFile.Name);
+
+                // Envia para a API de upload de documentos
+                var response = await Http.PostAsync("api/admissoes/documentos/upload", content);
+                if (!response.IsSuccessStatusCode)
+                {
+                    errorMessage = await response.Content.ReadAsStringAsync();
+                    return;
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<FileUploadResponse>();
+                var match = Regex.Match(result?.FileUrl, "/uploads.*$");
+                errorMessage = string.Empty;
+
+                // Cria o documento via serviço
+                var docDto = new DocumentoDto
+                {
+                    Id = Guid.NewGuid(),
+                    CandidaturaId = Guid.Parse(id),
+                    TipoDocumentoId = selectedTipoDocumentoId.Value,
+                    TemplateId = null,
+                    Caminho = match.Value
+                };
+                await DocumentoService.CreateDocumentoAsync(docDto);
+
+                successMessage = "Documento enviado com sucesso!";
+                NavigationManager.NavigateTo($"/admissoes/documentos/{id}");
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Erro ao enviar o ficheiro: {ex.Message}";
+            }
+        }
+        else // Template
+        {
+            if (!selectedTemplateId.HasValue)
+            {
+                errorMessage = "Por favor, selecione um template.";
+                return;
+            }
+
+            try
+            {
+                await DocumentoService.CreateDocumentoFromTemplateAsync(Guid.Parse(id), selectedTemplateId.Value);
+                NavigationManager.NavigateTo($"/admissoes/documentos/{id}");
+            }
+            catch (PlaceholderMissingException mex)
+            {
+                var result = await DialogService.OpenAsync<PlaceholdersDialog>(
+                "Preencha os campos em falta",
+                new Dictionary<string, object> { { "Campos", mex.CamposFaltantes } },
+                new DialogOptions { Width = "400px" }
+                );
+
+                if (result is Dictionary<string, string> extras)
+                {
+                    await DocumentoService.CreateDocumentoFromTemplateAsync(Guid.Parse(id), selectedTemplateId.Value, extras);
+                    NavigationManager.NavigateTo($"/admissoes/documentos/{id}");
+                }
+            }
+        }
+    }
+
+    private void OnCancel()
+    {
+        NavigationManager.NavigateTo($"/admissoes/documentos/{id}");
+    }
+
+    private class FileUploadResponse
+    {
+        public string? FileUrl { get; set; }
+    }
+}

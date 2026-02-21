@@ -1,0 +1,104 @@
+﻿@page "/dashboard"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using PRH.Shared.DataTransferObjets.Funcionario
+@using PRH.Shared.DataTransferObjets.Entrevista
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IFuncionarioService FuncionarioService
+@inject IEmpresaService EmpresaService
+@inject IEntrevistaService EntrevistaService
+
+@attribute [Authorize]
+
+<PageTitle>Perfil</PageTitle>
+
+<HeaderWithSubtext Title=@($"Bem Vindo, {username}")
+                   Subtext=@($"Empresa {funcionario?.Empresa?.Nome}") />
+
+<h5 Style="margin-top:30px;">Próximas Entrevistas:</h5>
+
+@if (entrevistasHoje is null)
+{
+    <LoadingEntityShort Entity="entrevistas" />
+}
+else if (!entrevistasHoje.Any())
+{
+    <p>Não há entrevistas marcadas para hoje.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var entrevista in entrevistasHoje)
+        {
+            <div class="col-md-6 mb-3">
+                <EntityCard>
+                    <Content>
+                        <h5 class="mb-1 text-dark">
+                            Entrevista a @entrevista.NomeCandidato
+                        </h5>
+                        <p class="mb-0 text-muted small">@entrevista.Resultado?.Descricao</p>
+                        <p class="mb-0 text-muted small">Marcada para @entrevista.DataHora.ToString("HH:mm")</p>
+                    </Content>
+                    <Buttons>
+                        <RadzenButton Icon="visibility" Tooltip="Ver detalhes"
+                        Click="@(args => NavigateToEntrevista(entrevista.Id))"
+                        Class="btn btn-primary" />
+                    </Buttons>
+                </EntityCard>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private string? username;
+    private FuncionarioGetOneDto funcionario;
+    private IEnumerable<EntrevistaGetAllDto> entrevistasHoje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        if (user.IsInRole("Administrador"))
+        {
+            Navigation.NavigateTo("/recrutamentos");
+            return;
+        }
+
+        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        funcionario = await FuncionarioService.GetFuncionarioByIdAsync(userId);
+
+        var email = funcionario.Email ?? "";
+        username = user.Identity.Name == "NA"
+            ? (email.Contains('@') ? email.Split('@')[0] : email)
+            : user.Identity.Name;
+
+        await CarregarEntrevistasDeHoje();
+    }
+
+    private async Task CarregarEntrevistasDeHoje()
+    {
+        var hoje = DateTime.Today;
+        var amanha = hoje.AddDays(1).AddTicks(-1);
+
+        // Obtem até 100 entrevistas com filtro por data
+        var pagedResult = await EntrevistaService.GetEntrevistasCalendarioAsync(
+             hoje, amanha
+        );
+
+        entrevistasHoje = pagedResult;
+    }
+
+    private void NavigateToEntrevista(Guid entrevistaId)
+    {
+        Navigation.NavigateTo($"/entrevista/{entrevistaId}");
+    }
+}

@@ -1,0 +1,104 @@
+@page "/tipoDocumentos/adicionar"
+@using Microsoft.AspNetCore.Authorization
+@using PRH.Client.Wasm.Services.Contracts
+@using PRH.Shared.DataTransferObjets
+@inject Radzen.DialogService DialogService
+@inject ITipoDocumentoService TipoDocumentoService
+@inject IEmpresaService EmpresaService
+@inject NavigationManager NavigationManager
+@using Radzen.Blazor
+
+@attribute [Authorize]
+
+@* Exibe mensagem de erro, caso ocorra alguma falha no upload *@
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert"
+        style="margin-top:20px; position: relative; display: flex; justify-content: space-between; align-items: center;">
+        <span>@errorMessage</span>
+        <button type="button" style="background: none; border: none; font-size:1.2em; margin-left: 10px;"
+            @onclick="() => errorMessage = string.Empty">
+            x
+        </button>
+    </div>
+}
+
+<h1>Adicionar Tipo de Documento</h1>
+
+<RadzenStack Orientation="Orientation.Vertical" Style="margin-top: 20px;">
+    <RadzenFieldset Text="Dados do Novo Tipo de Documento">
+        <RadzenStack Orientation="Orientation.Vertical" Style="margin-bottom: 10px">
+            <div>
+                <RadzenLabel Text="Nome" Component="Nome" Style="display:block;" />
+                <RadzenTextBox @bind-Value="tipo.Nome" Name="Nome" Style="width:100%;" 
+                               @oninput="() => errorMessage = string.Empty" />
+            </div>
+            <div>
+                <RadzenLabel Text="Assinável" Component="Assinavel" Style="display:block;" />
+                <RadzenSwitch @bind-Value="tipo.Assinavel" Name="Assinavel" />
+            </div>
+            <div>
+                <RadzenLabel Text="Empresas" Component="EmpresaIds" Style="display:block;" />
+                <RadzenDropDown TItem="EmpresaDto" TValue="IEnumerable<Guid>" Data="@empresas" TextProperty="Nome"
+                    ValueProperty="Id" Value="@selectedEmpresaIds"
+                    ValueChanged="@((IEnumerable<Guid> args) => { selectedEmpresaIds = args.ToList(); errorMessage = string.Empty; })" Multiple="true"
+                    Placeholder="Selecione uma ou mais empresas" Name="EmpresaIds" Style="width:100%;" />
+            </div>
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End"
+            AlignItems="AlignItems.Center" Gap="10px">
+            <RadzenButton Text="Cancelar" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@OnCancel" />
+            <RadzenButton Text="Criar Tipo de Documento" Icon="add" ButtonStyle="ButtonStyle.Primary" Click="@OnSubmit" />
+        </RadzenStack>
+    </RadzenFieldset>
+</RadzenStack>
+
+
+@code {
+    private TipoDocumentoDto tipo = new TipoDocumentoDto();
+    private List<EmpresaDto> empresas = new();
+    private List<Guid> selectedEmpresaIds = new();
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        empresas = (await EmpresaService.GetEmpresasAsync()).ToList();
+    }
+
+    private async Task OnSubmit()
+    {
+        errorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(tipo.Nome))
+        {
+            errorMessage = "O nome é obrigatório.";
+            return;
+        }
+
+        if (!selectedEmpresaIds.Any())
+        {
+            errorMessage = "Selecione ao menos uma empresa.";
+            return;
+        }
+
+        tipo.EmpresaTipoDocumentos = selectedEmpresaIds
+        .Select(id => new EmpresaTipoDocumentoDto { EmpresaId = id })
+        .ToList();
+
+        try
+        {
+            await TipoDocumentoService.CreateTipoDocumentoAsync(tipo);
+            NavigationManager.NavigateTo("/tipoDocumentos");
+        }
+        catch (Exception ex)
+        {
+            await DialogService.Alert("Não foi possível criar o tipo de documento.", ex.Message);
+        }
+    }
+    private void OnCancel()
+    {
+        NavigationManager.NavigateTo("/tipoDocumentos");
+    }
+
+}

@@ -18,6 +18,11 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<IdentityUserRole<s
             },
             new IdentityUserRole<string>
             {
+                UserId = UserConfiguration.GESTOR_TRIGENIUS.ToString(),
+                RoleId = RoleConfiguration.ROLE_GESTOR_CLIENTE.ToString(),
+            },
+            new IdentityUserRole<string>
+            {
                 UserId = UserConfiguration.ANA_PINTO.ToString(),
                 RoleId = RoleConfiguration.ROLE_FUNCIONARIO.ToString()
             },
@@ -67,5 +72,14 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<IdentityUserRole<s
                 RoleId = RoleConfiguration.ROLE_FUNCIONARIO.ToString()
             }
         );
+    }
+
+    public static IdentityUserRole<string> MakeFuncionario(Guid userId)
+    {
+        return new IdentityUserRole<string>
+        {
+            UserId = userId.ToString(),
+            RoleId = RoleConfiguration.ROLE_FUNCIONARIO.ToString()
+        };
     }
 }
